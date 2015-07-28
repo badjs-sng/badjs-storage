@@ -4,7 +4,7 @@
     },
     "acceptor": {
         "port" : 10000,
-        "address" : "10.143.132.205",
+        "address" : "10.185.14.28",
         "subscribe": "badjs",
         "module": "./acceptor/zmq"
     }
