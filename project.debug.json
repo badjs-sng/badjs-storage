@@ -1,6 +1,9 @@
 {
     "mongodb" : {
-        "url" : "mongodb://localhost:27017/badjs"
+        "url" : "mongodb://localhost:27017/badjs",
+        "shard" : false,
+        "adminUser" : "betterjs",
+        "adminPassword" : "betterjs4imweb"
     },
     "acceptor": {
       "port" : 10000,

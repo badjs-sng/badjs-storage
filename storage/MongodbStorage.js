@@ -27,13 +27,44 @@ var insertDocuments = function(db , model) {
                 collection.createIndex( {date : -1 , level : 1 } , function (err , result){
 
                 });
+                if (global.MONGO_SHARD) {
+                    shardCollection(db, collection, collectionName);
+                }
             }
             hadCreatedCollection[collectionName] = true;
         })
     });
 
     logger.debug("save one log : " + JSON.stringify(model.model));
-}
+};
+
+var shardCollection = function (db, collection, collectionName) {
+    collection.createIndex({_id: "hashed"}, function (err, result) {
+        if (err) {
+            logger.info("failed to create hashed index");
+        } else {
+            logger.info("hashed index created");
+
+            var adminDb = db.admin();
+            adminDb.authenticate(global.MONGO_ADMIN_USER, global.MONGO_ADMIN_PASSWORD, function (err, result) {
+                if (err) {
+                    logger.info("failed to access adminDB");
+                } else {
+                    adminDb.command({
+                        shardcollection: "badjs." + collectionName,
+                        key: {_id: "hashed"}
+                    }, function (err, info) {
+                        if (err) {
+                            logger.info("failed to shardcollection " + collectionName);
+                        } else {
+                            logger.info(collectionName + " shard correctly");
+                        }
+                    });
+                }
+            });
+        }
+    });
+};
 
 var url = global.MONGDO_URL;
 var mongoDB;

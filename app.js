@@ -19,6 +19,13 @@ if(argv.indexOf('--debug') >= 0){
 
 
 GLOBAL.MONGDO_URL = GLOBAL.pjconfig.mongodb.url;
+if ("shard" in GLOBAL.pjconfig.mongodb) {
+    GLOBAL.MONGO_SHARD = true;
+    GLOBAL.MONGO_ADMIN_USER = GLOBAL.pjconfig.mongodb.adminUser;
+    GLOBAL.MONGO_ADMIN_PASSWORD = GLOBAL.pjconfig.mongodb.adminPassword;
+} else {
+    GLOBAL.MONGO_SHARD = false;
+}
 var dispatcher = require(GLOBAL.pjconfig.acceptor.module)
   , save = require('./storage/MongodbStorage');
 
