@@ -38,6 +38,7 @@ var insertDocuments = function(db , model) {
     logger.debug("save one log : " + JSON.stringify(model.model));
 };
 
+// shard new collection when created
 var shardCollection = function (db, collection, collectionName) {
     collection.createIndex({_id: "hashed"}, function (err, result) {
         if (err) {
@@ -46,22 +47,24 @@ var shardCollection = function (db, collection, collectionName) {
             logger.info("hashed index created");
 
             var adminDb = db.admin();
-            adminDb.authenticate(global.MONGO_ADMIN_USER, global.MONGO_ADMIN_PASSWORD, function (err, result) {
-                if (err) {
-                    logger.info("failed to access adminDB");
-                } else {
-                    adminDb.command({
-                        shardcollection: "badjs." + collectionName,
-                        key: {_id: "hashed"}
-                    }, function (err, info) {
-                        if (err) {
-                            logger.info("failed to shardcollection " + collectionName);
-                        } else {
-                            logger.info(collectionName + " shard correctly");
-                        }
-                    });
-                }
-            });
+            if (global.MONGO_ADMIN_USER && global.MONGO_ADMIN_PASSWORD) {
+                adminDb.authenticate(global.MONGO_ADMIN_USER, global.MONGO_ADMIN_PASSWORD, function (err, result) {
+                    if (err) {
+                        logger.info("failed to access adminDB");
+                    } else {
+                        adminDb.command({
+                            shardcollection: "badjs." + collectionName,
+                            key: {_id: "hashed"}
+                        }, function (err, info) {
+                            if (err) {
+                                logger.info("failed to shardcollection " + collectionName);
+                            } else {
+                                logger.info(collectionName + " shard correctly");
+                            }
+                        });
+                    }
+                });
+            }
         }
     });
 };
