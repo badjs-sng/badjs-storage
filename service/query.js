@@ -214,7 +214,7 @@ module.exports = function (){
     connect()
         .use('/query', connect.query())
         .use('/query', function (req, res) {
-
+            //校验查询req的格式
             var result = validate(req , res);
 
             if(!result.ok){
@@ -226,7 +226,7 @@ module.exports = function (){
                 return ;
             }
 
-
+            //构造查询json
             var json = req.query;
             var id = json.id , startDate = json.startDate , endDate = json.endDate;
 
@@ -284,7 +284,7 @@ module.exports = function (){
                 });
 
                 cursor.sort({'date' : -1}).skip(json.index * limit).limit(limit).toArray(function(err , item){
-                        res.write(   JSON.stringify(item));
+                        res.write(JSON.stringify(item));
                         res.end();
 
                 });
@@ -293,6 +293,37 @@ module.exports = function (){
             });
 
 
+        })
+        .use('/queryCount',connect.query())
+        .use('/queryCount',function(req,res){
+            //校验查询req的格式
+            var result = validate(req , res);
+
+            if(!result.ok){
+                res.writeHead(403, {
+                    'Content-Type': 'text/html'
+                });
+                res.statusCode = 403;
+                res.write(JSON.stringify(result));
+                return ;
+            }
+
+            var coursor = mongoDB.collection('badjslog'+ id).group({
+                keyf : function(data){
+                    var date = new Date(data.date);
+                    var dateKey = ""+date.getFullYear()+"-"+date.getMonth()+"-"+date.getDate()+" "+date.getHours()+":"+date.getMinutes();
+                    return {'day':dateKey};
+                },
+                initial : {count:0},
+                reduce : function Reduce(data,out){
+                    if(data.level == 4){
+                        out.count++;
+                    }
+                }
+            });
+        var doc = coursor.next();
+            res.write(doc);
+            res.end();
         })
         .use('/errorMsgTop', connect.query())
         .use('/errorMsgTop', function (req, res) {
