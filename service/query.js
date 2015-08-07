@@ -296,6 +296,7 @@ module.exports = function (){
         })
         .use('/queryCount',connect.query())
         .use('/queryCount',function(req,res){
+            console.log("request start");
             //校验查询req的格式
             var result = validate(req , res);
 
@@ -307,23 +308,29 @@ module.exports = function (){
                 res.write(JSON.stringify(result));
                 return ;
             }
+            var json = req.query;
+            var id = json.id , startDate = json.startDate , endDate = json.endDate;
 
-            var coursor = mongoDB.collection('badjslog'+ id).group({
-                keyf : function(data){
+            var coursor = mongoDB.collection('badjslog'+ id).group(
+                function(data){
                     var date = new Date(data.date);
                     var dateKey = ""+date.getFullYear()+"-"+date.getMonth()+"-"+date.getDate()+" "+date.getHours()+":"+date.getMinutes();
                     return {'day':dateKey};
                 },
-                initial : {count:0},
-                reduce : function Reduce(data,out){
+                {count:0},
+                function Reduce(data,out){
                     if(data.level == 4){
                         out.count++;
                     }
+                },
+                true
+            ).then(function(err,result){
+                if( global.debug == true){
+                    logger.debug("query result is="+JSON.stringify(result))
                 }
+                res.write(result);
+                res.end();
             });
-        var doc = coursor.next();
-            res.write(doc);
-            res.end();
         })
         .use('/errorMsgTop', connect.query())
         .use('/errorMsgTop', function (req, res) {
