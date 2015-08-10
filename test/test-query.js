@@ -25,17 +25,18 @@ MongoClient.connect(mongoUrl, function(err, db) {
 
     queryJSON.level = {$all : [4] } ;
 
-
-    mongoDB.collection('badjslog_' + 991).find(queryJSON , function (error,cursor){
+    var startTime = Date.now();
+    mongoDB.collection('badjslog_' + 51).find(queryJSON , function (error,cursor){
         console.log(error)
-        cursor.sort({'date' : -1}).skip(0).limit(500).forEach(function(item){
+        cursor.sort({'date' : -1}).skip(0).limit(50000).forEach(function(item){
           if(item){
-               console.log(JSON.stringify(item));cd
+               console.log(JSON.stringify(item));
            }
         });
 
     });
 
+    console.log(Date.now() - startTime);
 
 });
 
