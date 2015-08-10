@@ -307,7 +307,7 @@ module.exports = function () {
             var json = req.query;
             var id = json.id, startDate = json.startDate, endDate = json.endDate;
 
-            mongoDB.collection('badjslog' + id).group(
+            mongoDB.collection('badjslog_' + id).group(
                 function (data) {
                     var date = new Date(data.date);
                     var dateKey = "" + date.getFullYear() + "-" + date.getMonth() + "-" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes();
@@ -323,7 +323,7 @@ module.exports = function () {
                 true,
                 function (err, result) {
                     if (global.debug == true) {
-                        Logger.debug("query error is=" + JSON.stringify(err));
+                        logger.debug("query error is=" + JSON.stringify(err));
                         logger.debug("query result is=" + JSON.stringify(result))
                     }
                     if (err) {
@@ -331,7 +331,7 @@ module.exports = function () {
                         res.end();
                         return;
                     }
-                    res.write(result);
+                    res.write(JSON.stringify(result));
                     res.end();
                 });
         })
