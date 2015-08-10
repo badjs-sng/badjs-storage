@@ -307,35 +307,62 @@ module.exports = function () {
             var json = req.query;
             var id = json.id, startDate = json.startDate, endDate = json.endDate;
 
-            mongoDB.collection('badjslog_' + id).group(
-                function (data) {
-                    var date = new Date(data.date);
-                    var dateKey = "" + date.getFullYear() + "-" + date.getMonth() + "-" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes();
-                    return {'day': dateKey};
-                },
-                {date: {$lt: endDate, $gt: startDate}},
-                {count: 0},
-                function Reduce(data, out) {
-                    if (data.level == 4) {
-                        out.count++;
+            var cursor = mongoDB.collection('badjslog_' + id).aggregate([
+                {$match:{'date': {$lt: endDate, $gt: startDate}}},
+                {
+                    $group: {
+                        _id: {
+                            time:{$dateToString:{format: "%Y-%m-%d %H:%M",date:'$date'}}
+                        },
+                        count: {$sum: 1}
                     }
                 },
-                true,
-                function (err, result) {
-                    if (global.debug == true) {
-                        logger.debug("query error is=" + JSON.stringify(err));
-                        logger.debug("query result is=" + JSON.stringify(result))
-                    }
-                    if (err) {
-                        res.write(JSON.stringify(err));
-                        res.end();
-                        return;
-                    }
-                    res.write(JSON.stringify(result));
+                {$sort: {"_id": 1}}
+            ]);
+            cursor.toArray(function (err, result) {
+                if (global.debug == true) {
+                    logger.debug("query error is=" + JSON.stringify(err));
+                    logger.debug("query result is=" + JSON.stringify(result))
+                }
+                if (err) {
+                    res.write(JSON.stringify(err));
                     res.end();
-                });
-        })
-        .use('/errorMsgTop', connect.query())
+                    return;
+                }
+                res.write(JSON.stringify(result));
+                res.end();
+            })
+            /*mongoDB.collection('badjslog_' + id).group(
+             function (data) {
+             var date = new Date(data.date);
+             var dateKey = "" + date.getFullYear() + "-" + date.getMonth() + "-" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes();
+             return {'day': dateKey};
+             },
+             {date: {$lt: endDate, $gt: startDate}},
+             {count: 0},
+             function Reduce(data, out) {
+             if (data.level == 4) {
+             out.count++;
+             }
+             },
+             true,
+             function (err, result) {
+             if (global.debug == true) {
+             logger.debug("query error is=" + JSON.stringify(err));
+             logger.debug("query result is=" + JSON.stringify(result))
+             }
+             if (err) {
+             res.write(JSON.stringify(err));
+             res.end();
+             return;
+             }
+             res.write(JSON.stringify(result));
+             res.end();
+             });*/
+        }
+    )
+        .
+        use('/errorMsgTop', connect.query())
         .use('/errorMsgTop', function (req, res) {
             var error = validateDate(req.query.startDate)
             if (error) {
