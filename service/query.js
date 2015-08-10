@@ -3,7 +3,7 @@
  */
 
 var MongoClient = require('mongodb').MongoClient,
-     connect = require('connect');
+    connect = require('connect');
 
 var log4js = require('log4js'),
     logger = log4js.getLogger();
@@ -19,19 +19,17 @@ var url = global.MONGDO_URL;
 
 var mongoDB;
 // Use connect method to connect to the Server
-MongoClient.connect(url, function(err, db) {
-    if(err){
+MongoClient.connect(url, function (err, db) {
+    if (err) {
         logger.info("failed connect to server");
-    }else {
+    } else {
         logger.info("Connected correctly to server");
     }
     mongoDB = db;
 });
 
 
-
-
-var dateFormat  = function (date , fmt){
+var dateFormat = function (date, fmt) {
     var o = {
         "M+": date.getMonth() + 1, //月份
         "d+": date.getDate(), //日
@@ -48,244 +46,242 @@ var dateFormat  = function (date , fmt){
 }
 
 
-
-
-var validateDate = function (date){
-        var startDate = new Date(date-0) - 0;
-        if(isNaN(startDate)){
-            return {ok : false , msg : 'date error'};
-        }
+var validateDate = function (date) {
+    var startDate = new Date(date - 0) - 0;
+    if (isNaN(startDate)) {
+        return {ok: false, msg: 'date error'};
+    }
 
 }
 
-var validate = function (req , rep){
+var validate = function (req, rep) {
     var json = req.query;
 
     var id;
-    if(isNaN(( id = req.query.id - 0) ) || id <=0 ||id >= 9999){
-        return {ok : false , msg : 'id is required'};
+    if (isNaN(( id = req.query.id - 0)) || id <= 0 || id >= 9999) {
+        return {ok: false, msg: 'id is required'};
     }
 
-    if(!json.startDate || !json.endDate){
-        return {ok : false , msg : 'startDate or endDate is required'};
+    if (!json.startDate || !json.endDate) {
+        return {ok: false, msg: 'startDate or endDate is required'};
     }
 
 
-    try{
+    try {
         var startDate = new Date(json.startDate - 0);
-        var endDate = new Date(json.endDate - 0) ;
+        var endDate = new Date(json.endDate - 0);
         json.startDate = startDate;
         json.endDate = endDate;
-    }catch(e){
-        return {ok : false , msg : 'startDate or endDate parse error'};
+    } catch (e) {
+        return {ok: false, msg: 'startDate or endDate parse error'};
     }
 
-    try{
-        if(json.include){
+    try {
+        if (json.include) {
             json.include = JSON.parse(json.include)
-        }else {
+        } else {
             json.include = [];
         }
 
-        if(json.exclude ){
-            json.exclude  = JSON.parse(json.exclude )
-        }else {
+        if (json.exclude) {
+            json.exclude = JSON.parse(json.exclude)
+        } else {
             json.exclude = [];
         }
-    }catch(e){
-        return {ok : false , msg : 'include or exclude parse error'};
+    } catch (e) {
+        return {ok: false, msg: 'include or exclude parse error'};
     }
 
 
-    try{
-        if(json.level){
-            if(toString.apply(json.level) == "[object Array]"){
-            }else {
+    try {
+        if (json.level) {
+            if (toString.apply(json.level) == "[object Array]") {
+            } else {
                 json.level = JSON.parse(json.level);
             }
 
-        }else {
+        } else {
             json.level = [];
         }
-    }catch(e){
-        return {ok : false , msg : 'level parse error'};
+    } catch (e) {
+        return {ok: false, msg: 'level parse error'};
     }
 
-    return {ok : true};
+    return {ok: true};
 }
 
-var totalKey = dateFormat(new Date , "yyyy-MM-dd");
+var totalKey = dateFormat(new Date, "yyyy-MM-dd");
 
-var errorMsgTop = function (json , cb){
+var errorMsgTop = function (json, cb) {
     var id;
-    if(isNaN(( id = json.id - 0) ) || id <=0 ||id >= 9999){
-        cb({ok : false , msg : 'id is required'});
+    if (isNaN(( id = json.id - 0)) || id <= 0 || id >= 9999) {
+        cb({ok: false, msg: 'id is required'});
     }
 
-    var oneDate = new Date(json.startDate ) ;
+    var oneDate = new Date(json.startDate);
 
-    if( isNaN( +oneDate ) ){
-        cb( {ok : false , msg : 'startDate or endDate parse error'});
-        return ;
+    if (isNaN(+oneDate)) {
+        cb({ok: false, msg: 'startDate or endDate parse error'});
+        return;
     }
 
-    var nowDate = new Date(dateFormat(new Date , "yyyy-MM-dd")) - 0;
+    var nowDate = new Date(dateFormat(new Date, "yyyy-MM-dd")) - 0;
 
-    if(( +oneDate  ) > (+nowDate )){
-        cb( {ok : false , msg : 'can not found today'});
-        return ;
+    if (( +oneDate  ) > (+nowDate )) {
+        cb({ok: false, msg: 'can not found today'});
+        return;
     }
 
-    var startDate =  oneDate;
-    var endDate = new Date( +startDate  + 86400000);
+    var startDate = oneDate;
+    var endDate = new Date(+startDate + 86400000);
 
-    var queryJSON =  {date : {$lt : endDate , $gte : startDate } , level : 4 };
+    var queryJSON = {date: {$lt: endDate, $gte: startDate}, level: 4};
 
     var limit = json.limit || 50;
 
-    var outResult = {startDate : +startDate  , endDate : +endDate  , item:[]};
+    var outResult = {startDate: +startDate, endDate: +endDate, item: []};
 
 
-  /*  mongoDB.collection('badjslog_' + id).find(queryJSON).count(function(error, doc){
-        if(error){
-            cb(error)
-            return ;
-        }*/
+    /*  mongoDB.collection('badjslog_' + id).find(queryJSON).count(function(error, doc){
+     if(error){
+     cb(error)
+     return ;
+     }*/
 
-    var total = cacheTotal.getTotal({id : id , key : totalKey});
+    var total = cacheTotal.getTotal({id: id, key: totalKey});
 
-        var cursor =  mongoDB.collection('badjslog_' + id).aggregate(
-            [
-                {$match: queryJSON},
-                {$group: {_id: "$msg", total: {$sum: 1}}},
-                {$sort: {total: -1}},
-                {$limit: limit}
-            ],
-            {allowDiskUse: true}
-        );
+    var cursor = mongoDB.collection('badjslog_' + id).aggregate(
+        [
+            {$match: queryJSON},
+            {$group: {_id: "$msg", total: {$sum: 1}}},
+            {$sort: {total: -1}},
+            {$limit: limit}
+        ],
+        {allowDiskUse: true}
+    );
 
-        cursor.toArray(function (err , docs){
-            if(err){
-                cb(err)
-                return ;
-            }
-            outResult.item = docs;
-            outResult.pv = total;
-            cb(err,outResult);
-        });
+    cursor.toArray(function (err, docs) {
+        if (err) {
+            cb(err)
+            return;
+        }
+        outResult.item = docs;
+        outResult.pv = total;
+        cb(err, outResult);
+    });
 
 //    });
 }
 
 
-var getErrorMsgFromCache = function (query , isJson , cb){
-    var fileName = dateFormat(new Date(query.startDate), "yyyy-MM-dd") +"__" + query.id;
-    var filePath = path.join("." , "cache" , "errorMsg" , fileName);
+var getErrorMsgFromCache = function (query, isJson, cb) {
+    var fileName = dateFormat(new Date(query.startDate), "yyyy-MM-dd") + "__" + query.id;
+    var filePath = path.join(".", "cache", "errorMsg", fileName);
 
-    var returnValue = function (err , doc){
-        if(query.noReturn){
-            cb(err );
-        }else {
-            cb(err , doc );
+    var returnValue = function (err, doc) {
+        if (query.noReturn) {
+            cb(err);
+        } else {
+            cb(err, doc);
         }
     }
-    if(fs.existsSync(filePath)){
-        logger.info("get ErrorMsg from cache id="+ query.id );
-        if(isJson){
-            returnValue(null , JSON.parse(fs.readFileSync(filePath)));
-        }else {
-            returnValue(null , fs.readFileSync(filePath));
+    if (fs.existsSync(filePath)) {
+        logger.info("get ErrorMsg from cache id=" + query.id);
+        if (isJson) {
+            returnValue(null, JSON.parse(fs.readFileSync(filePath)));
+        } else {
+            returnValue(null, fs.readFileSync(filePath));
         }
 
         return;
 
 
     }
-    errorMsgTop(query, function (err , doc){
-        if(err){
-            logger.info("cache errorMsgTop error fileName="+fileName + " " + err)
+    errorMsgTop(query, function (err, doc) {
+        if (err) {
+            logger.info("cache errorMsgTop error fileName=" + fileName + " " + err)
         }
-        returnValue(err , isJson ?doc : JSON.stringify(doc));
+        returnValue(err, isJson ? doc : JSON.stringify(doc));
     });
 }
 
 
-module.exports = function (){
+module.exports = function () {
     connect()
         .use('/query', connect.query())
         .use('/query', function (req, res) {
             //校验查询req的格式
-            var result = validate(req , res);
+            var result = validate(req, res);
 
-            if(!result.ok){
+            if (!result.ok) {
                 res.writeHead(403, {
                     'Content-Type': 'text/html'
                 });
                 res.statusCode = 403;
                 res.write(JSON.stringify(result));
-                return ;
+                return;
             }
 
             //构造查询json
             var json = req.query;
-            var id = json.id , startDate = json.startDate , endDate = json.endDate;
+            var id = json.id, startDate = json.startDate, endDate = json.endDate;
 
 
-            var queryJSON  = {all : {}};
+            var queryJSON = {all: {}};
 
             var includeJSON = [];
-            json.include.forEach(function (value , key){
-                includeJSON.push( new RegExp( value ));
+            json.include.forEach(function (value, key) {
+                includeJSON.push(new RegExp(value));
             });
 
-            if(includeJSON.length > 0){
+            if (includeJSON.length > 0) {
                 queryJSON.all.$all = includeJSON;
             }
 
             var excludeJSON = [];
-            json.exclude.forEach(function (value , key){
-                excludeJSON.push(new RegExp( value ));
+            json.exclude.forEach(function (value, key) {
+                excludeJSON.push(new RegExp(value));
             });
 
-            if(excludeJSON.length > 0){
-                queryJSON.all.$not = {$in : excludeJSON};
+            if (excludeJSON.length > 0) {
+                queryJSON.all.$not = {$in: excludeJSON};
             }
 
-            if(includeJSON.length <= 0 && excludeJSON.length <=0){
+            if (includeJSON.length <= 0 && excludeJSON.length <= 0) {
                 delete queryJSON.all;
             }
 
-            json.level.forEach(function ( value , key){
-                json.level[key] =  value - 0;
+            json.level.forEach(function (value, key) {
+                json.level[key] = value - 0;
             })
 
 
-           queryJSON.date = {$lt : endDate , $gt : startDate  };
+            queryJSON.date = {$lt: endDate, $gt: startDate};
 
 
-           queryJSON.level = {$in : json.level } ;
+            queryJSON.level = {$in: json.level};
 
             var limit = 500;
 
-            if(json.index - 0){
+            if (json.index - 0) {
                 json.index = (json.index - 0);
-            }else {
+            } else {
                 json.index = 0
             }
 
-            if( global.debug == true){
-                logger.debug("query logs id="+ id + ",query=" + JSON.stringify(queryJSON))
+            if (global.debug == true) {
+                logger.debug("query logs id=" + id + ",query=" + JSON.stringify(queryJSON))
             }
 
 
-            mongoDB.collection('badjslog_' + id).find(queryJSON , function (error,cursor){
+            mongoDB.collection('badjslog_' + id).find(queryJSON, function (error, cursor) {
                 res.writeHead(200, {
-                        'Content-Type': 'text/json'
+                    'Content-Type': 'text/json'
                 });
 
-                cursor.sort({'date' : -1}).skip(json.index * limit).limit(limit).toArray(function(err , item){
-                        res.write(JSON.stringify(item));
-                        res.end();
+                cursor.sort({'date': -1}).skip(json.index * limit).limit(limit).toArray(function (err, item) {
+                    res.write(JSON.stringify(item));
+                    res.end();
 
                 });
 
@@ -294,56 +290,63 @@ module.exports = function (){
 
 
         })
-        .use('/queryCount',connect.query())
-        .use('/queryCount',function(req,res){
+        .use('/queryCount', connect.query())
+        .use('/queryCount', function (req, res) {
             console.log("request start");
             //校验查询req的格式
-            var result = validate(req , res);
+            var result = validate(req, res);
 
-            if(!result.ok){
+            if (!result.ok) {
                 res.writeHead(403, {
                     'Content-Type': 'text/html'
                 });
                 res.statusCode = 403;
                 res.write(JSON.stringify(result));
-                return ;
+                return;
             }
             var json = req.query;
-            var id = json.id , startDate = json.startDate , endDate = json.endDate;
+            var id = json.id, startDate = json.startDate, endDate = json.endDate;
 
-            var coursor = mongoDB.collection('badjslog'+ id).group(
-                function(data){
+            mongoDB.collection('badjslog' + id).group(
+                function (data) {
                     var date = new Date(data.date);
-                    var dateKey = ""+date.getFullYear()+"-"+date.getMonth()+"-"+date.getDate()+" "+date.getHours()+":"+date.getMinutes();
-                    return {'day':dateKey};
+                    var dateKey = "" + date.getFullYear() + "-" + date.getMonth() + "-" + date.getDate() + " " + date.getHours() + ":" + date.getMinutes();
+                    return {'day': dateKey};
                 },
-                {count:0},
-                function Reduce(data,out){
-                    if(data.level == 4){
+                {date: {$lt: endDate, $gt: startDate}},
+                {count: 0},
+                function Reduce(data, out) {
+                    if (data.level == 4) {
                         out.count++;
                     }
                 },
-                true
-            ).then(function(err,result){
-                if( global.debug == true){
-                    logger.debug("query result is="+JSON.stringify(result))
-                }
-                res.write(result);
-                res.end();
-            });
+                true,
+                function (err, result) {
+                    if (global.debug == true) {
+                        Logger.debug("query error is=" + JSON.stringify(err));
+                        logger.debug("query result is=" + JSON.stringify(result))
+                    }
+                    if (err) {
+                        res.write(JSON.stringify(err));
+                        res.end();
+                        return;
+                    }
+                    res.write(result);
+                    res.end();
+                });
         })
         .use('/errorMsgTop', connect.query())
         .use('/errorMsgTop', function (req, res) {
-            var error =  validateDate(req.query.startDate)
-            if(error){
+            var error = validateDate(req.query.startDate)
+            if (error) {
                 res.end(JSON.stringify(error));
-                return ;
+                return;
             }
 
 
-            req.query.startDate = req.query.startDate  - 0;
+            req.query.startDate = req.query.startDate - 0;
 
-            getErrorMsgFromCache(req.query , false , function (error ,doc ){
+            getErrorMsgFromCache(req.query, false, function (error, doc) {
                 res.writeHead(200, {
                     'Content-Type': 'text/json'
                 });
@@ -354,39 +357,39 @@ module.exports = function (){
         })
         .use('/errorMsgTopCache', connect.query())
         .use('/errorMsgTopCache', function (req, res) {
-            var error =  validateDate(req.query.startDate)
-            if(error){
+            var error = validateDate(req.query.startDate)
+            if (error) {
                 res.end(JSON.stringify(error));
-                return ;
+                return;
             }
 
-            req.query.startDate = req.query.startDate  - 0;
+            req.query.startDate = req.query.startDate - 0;
             var startDate = req.query.startDate;
 
             res.end();
 
-            totalKey = dateFormat(new Date(startDate) , "yyyy-MM-dd");
+            totalKey = dateFormat(new Date(startDate), "yyyy-MM-dd");
 
             //trigger cacheTotal load in menory from disk
-            cacheTotal.getTotal({id : 0 , key : totalKey});
+            cacheTotal.getTotal({id: 0, key: totalKey});
 
-            req.query.ids.split("_").forEach(function (value , key){
-                var fileName = dateFormat(new Date(startDate), "yyyy-MM-dd") +"__" +value;
-                var filePath = path.join("." , "cache" , "errorMsg" , fileName);
+            req.query.ids.split("_").forEach(function (value, key) {
+                var fileName = dateFormat(new Date(startDate), "yyyy-MM-dd") + "__" + value;
+                var filePath = path.join(".", "cache", "errorMsg", fileName);
 
                 logger.info("start cache id=" + value);
 
-                if(fs.existsSync(filePath)){
-                    logger.info("id=" + value +" had cached");
-                    return ;
+                if (fs.existsSync(filePath)) {
+                    logger.info("id=" + value + " had cached");
+                    return;
                 }
 
-                getErrorMsgFromCache({id : value , startDate : startDate  } , false , function (err , doc){
-                    if(err){
-                        logger.info("cache errorMsgTop error fileName="+fileName + " " + err)
-                    }else {
-                        logger.info("id = " +  value  + "cache success");
-                        fs.writeFileSync(filePath , doc );
+                getErrorMsgFromCache({id: value, startDate: startDate}, false, function (err, doc) {
+                    if (err) {
+                        logger.info("cache errorMsgTop error fileName=" + fileName + " " + err)
+                    } else {
+                        logger.info("id = " + value + "cache success");
+                        fs.writeFileSync(filePath, doc);
                     }
                 });
 
