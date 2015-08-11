@@ -311,13 +311,11 @@ module.exports = function () {
                 {$match: {'date': {$lt: endDate, $gt: startDate}}},
                 {
                     $group: {
-                        _id: {
-                            time: {$dateToString: {format: "%Y-%m-%d %H:%M", date: '$date'}}
-                        },
+                        time: {$dateToString: {format: "%Y-%m-%d %H:%M", date: '$date'}},
                         count: {$sum: 1}
                     }
                 },
-                {$sort: {"_id": 1}}
+                {$sort: {"time": 1}}
             ]);
             cursor.toArray(function (err, result) {
                 if (global.debug == true) {
