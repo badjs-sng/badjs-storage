@@ -311,7 +311,7 @@ module.exports = function () {
                 {$match: {'date': {$lt: endDate, $gt: startDate}}},
                 {
                     $group: {
-                        time: {$dateToString: {format: "%Y-%m-%d %H:%M", date: '$date'}},
+                        time: {$dateToString: {format: "%Y-%m-%d %H:%M", date: ['$date',28800000]}},
                         count: {$sum: 1}
                     }
                 },
