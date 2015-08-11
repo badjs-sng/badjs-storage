@@ -308,11 +308,11 @@ module.exports = function () {
             var id = json.id, startDate = json.startDate, endDate = json.endDate;
 
             var cursor = mongoDB.collection('badjslog_' + id).aggregate([
-                {$match:{'date': {$lt: endDate, $gt: startDate}}},
+                {$match: {'date': {$lt: endDate, $gt: startDate}}},
                 {
                     $group: {
                         _id: {
-                            time:{$dateToString:{format: "%Y-%m-%d %H:%M",date:'$date'}}
+                            time: {$dateToString: {format: "%Y-%m-%d %H:%M", date: '$date'}}
                         },
                         count: {$sum: 1}
                     }
