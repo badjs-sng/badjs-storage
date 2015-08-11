@@ -311,12 +311,20 @@ module.exports = function () {
                 {$match: {'date': {$lt: endDate, $gt: startDate}}},
                 {
                     $group: {
-                        time: {$dateToString: {format: "%Y-%m-%d %H:%M", date: ['$date',28800000]}},
+                        _id: {
+                            time: {$dateToString: {format: "%Y-%m-%d %H:%M", date: '$date'}}
+                        },
                         count: {$sum: 1}
                     }
                 },
-                {$sort: {"time": 1}}
+                {$sort: {"_id": 1}}
             ]);
+            /*cursor.each(function(err,items){
+                if(!items)  return;
+                console.log(items);
+                items.time = new Date(items._id.time).getTime()+28800000;
+                delete items._id;
+            })*/
             cursor.toArray(function (err, result) {
                 if (global.debug == true) {
                     logger.debug("query error is=" + JSON.stringify(err));
@@ -327,9 +335,13 @@ module.exports = function () {
                     res.end();
                     return;
                 }
+                result.forEach(function(item){
+                    item.time = new Date(item._id.time).getTime()+28800000;
+                    delete item._id;
+                });
                 res.write(JSON.stringify(result));
                 res.end();
-            })
+            });
             /*mongoDB.collection('badjslog_' + id).group(
              function (data) {
              var date = new Date(data.date);
