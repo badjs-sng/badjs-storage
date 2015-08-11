@@ -13,6 +13,7 @@ var fs = require("fs");
 var path = require("path");
 
 var cacheTotal = require('../service/cacheTotal');
+var cacheCount = require('../service/cacheErrorCount');
 
 
 var url = global.MONGDO_URL;
@@ -261,7 +262,7 @@ module.exports = function () {
 
             queryJSON.level = {$in: json.level};
 
-            var limit = 500;
+            var limit = 5000;
 
             if (json.index - 0) {
                 json.index = (json.index - 0);
@@ -304,9 +305,15 @@ module.exports = function () {
                 res.write(JSON.stringify(result));
                 return;
             }
-            var json = req.query;
-            var id = json.id, startDate = json.startDate, endDate = json.endDate;
-
+            var json = req.query,
+                id = json.id, startDate = json.startDate, endDate = json.endDate,
+                dateNow = new Date();
+            if (new Date(startDate).getDate() - dateNow.getDate() > 5) {
+                var dateTody = dateNow.getFullYear() + '/' + dateNow.getMonth() + '/' + dateNow.getDate(),
+                    startTime = startDate,
+                    endTime = startDate = Date.parse(dateTody) - 5 * 24 * 60 * 60 * 1000,
+                    cacheResultArr = cacheCount.getCount(id,startTime,endTime);
+            }
             var cursor = mongoDB.collection('badjslog_' + id).aggregate([
                 {$match: {'date': {$lt: endDate, $gt: startDate}}},
                 {
@@ -320,11 +327,11 @@ module.exports = function () {
                 {$sort: {"_id": 1}}
             ]);
             /*cursor.each(function(err,items){
-                if(!items)  return;
-                console.log(items);
-                items.time = new Date(items._id.time).getTime()+28800000;
-                delete items._id;
-            })*/
+             if(!items)  return;
+             console.log(items);
+             items.time = new Date(items._id.time).getTime()+28800000;
+             delete items._id;
+             })*/
             cursor.toArray(function (err, result) {
                 if (global.debug == true) {
                     logger.debug("query error is=" + JSON.stringify(err));
@@ -335,10 +342,13 @@ module.exports = function () {
                     res.end();
                     return;
                 }
-                result.forEach(function(item){
-                    item.time = new Date(item._id.time).getTime()+28800000;
+                result.forEach(function (item) {
+                    item.time = new Date(item._id.time).getTime() + 28800000;
                     delete item._id;
                 });
+                if(cacheResultArr){
+                    result = cacheResultArr.concat(result);
+                }
                 res.write(JSON.stringify(result));
                 res.end();
             });
