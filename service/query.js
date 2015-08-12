@@ -204,7 +204,9 @@ var getErrorMsgFromCache = function (query, isJson, cb) {
         }
         returnValue(err, isJson ? doc : JSON.stringify(doc));
     });
-}
+};
+
+
 
 
 module.exports = function () {
@@ -312,7 +314,7 @@ module.exports = function () {
                 var dateTody = dateNow.getFullYear() + '/' + dateNow.getMonth() + '/' + dateNow.getDate(),
                     startTime = startDate,
                     endTime = startDate = Date.parse(dateTody) - 5 * 24 * 60 * 60 * 1000,
-                    cacheResultArr = cacheCount.getCount(id,startTime,endTime);
+                    cacheResultArr = cacheCount.getCount(id, startTime, endTime);
             }
             var cursor = mongoDB.collection('badjslog_' + id).aggregate([
                 {$match: {'date': {$lt: endDate, $gt: startDate}}},
@@ -346,7 +348,7 @@ module.exports = function () {
                     item.time = new Date(item._id.time).getTime() + 28800000;
                     delete item._id;
                 });
-                if(cacheResultArr){
+                if (cacheResultArr) {
                     result = cacheResultArr.concat(result);
                 }
                 res.write(JSON.stringify(result));
@@ -379,10 +381,8 @@ module.exports = function () {
              res.write(JSON.stringify(result));
              res.end();
              });*/
-        }
-    )
-        .
-        use('/errorMsgTop', connect.query())
+        })
+        .use('/errorMsgTop', connect.query())
         .use('/errorMsgTop', function (req, res) {
             var error = validateDate(req.query.startDate)
             if (error) {
@@ -443,6 +443,59 @@ module.exports = function () {
             });
 
 
+        })
+        .use('/errorCountSvg', connect.query())
+        .use('/errorCountSvg', function (req, res) {
+            console.log("request start");
+            //校验查询req的格式
+            var result = validate(req, res);
+            var dateObj = {},resArr=[];
+            if (!result.ok) {
+                res.writeHead(403, {
+                    'Content-Type': 'text/html'
+                });
+                res.statusCode = 403;
+                res.write(JSON.stringify(result));
+                return;
+            }
+            var json = req.query,
+                id = json.id, startDate = json.startDate, endDate = json.endDate;
+            startDate = startDate - 5 * 24 * 60 * 60 * 1000;
+            var cursor = mongoDB.collection('badjslog_' + id).aggregate([
+                {$match: {'date': {$lt: endDate, $gt: startDate}}},
+                {
+                    $group: {
+                        _id: {
+                            time: {$dateToString: {format: "%Y-%m-%d %H:%M", date: '$date'}}
+                        },
+                        count: {$sum: 1}
+                    }
+                },
+                {$sort: {"_id": 1}},
+            ]);
+            cursor.toArray(function (err, result) {
+                if (global.debug == true) {
+                    logger.debug("query error is=" + JSON.stringify(err));
+                    logger.debug("query result is=" + JSON.stringify(result))
+                }
+                if (err) {
+                    res.write(JSON.stringify(err));
+                    res.end();
+                    return;
+                }
+                result.forEach(function (item) {
+                    item.time = new Date(item._id.time).getTime() + 28800000;
+                    var tag = dateFormat(new Date(item.time), 'HH:MM');
+                    dateObj[tag] = Array.isArray(dateObj[tag])?dateObj[tag]:[];
+                    dateObj[tag].push(item);
+                    delete item._id;
+                });
+                for(var value in result){
+                     resArr.push(result[value].reduce(function(x,y){return x+y}) / result[value].length);
+                }
+                res.write(JSON.stringify(resArr));
+                res.end();
+            });
         })
         .listen(9000);
 
