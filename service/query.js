@@ -207,8 +207,6 @@ var getErrorMsgFromCache = function (query, isJson, cb) {
 };
 
 
-
-
 module.exports = function () {
     connect()
         .use('/query', connect.query())
@@ -447,9 +445,10 @@ module.exports = function () {
         .use('/errorCountSvg', connect.query())
         .use('/errorCountSvg', function (req, res) {
             console.log("request start");
+            req.query.startDate  = req.query.startDate - 5 * 24 * 60 * 60 * 1000;
             //校验查询req的格式
             var result = validate(req, res);
-            var dateObj = {},resArr=[];
+            var dateObj = {};
             if (!result.ok) {
                 res.writeHead(403, {
                     'Content-Type': 'text/html'
@@ -460,7 +459,6 @@ module.exports = function () {
             }
             var json = req.query,
                 id = json.id, startDate = json.startDate, endDate = json.endDate;
-            startDate = startDate - 5 * 24 * 60 * 60 * 1000;
             var cursor = mongoDB.collection('badjslog_' + id).aggregate([
                 {$match: {'date': {$lt: endDate, $gt: startDate}}},
                 {
@@ -474,6 +472,7 @@ module.exports = function () {
                 {$sort: {"_id": 1}},
             ]);
             cursor.toArray(function (err, result) {
+                var tempArr = [],resArr =[];
                 if (global.debug == true) {
                     logger.debug("query error is=" + JSON.stringify(err));
                     logger.debug("query result is=" + JSON.stringify(result))
@@ -483,17 +482,28 @@ module.exports = function () {
                     res.end();
                     return;
                 }
-                result.forEach(function (item) {
-                    item.time = new Date(item._id.time).getTime() + 28800000;
-                    var tag = dateFormat(new Date(item.time), 'HH:MM');
-                    dateObj[tag] = Array.isArray(dateObj[tag])?dateObj[tag]:[];
-                    dateObj[tag].push(item);
+                result.map(function (item) {
+                    item.time = new Date(item._id.time);
+                    var tag = item.time.getHours() + ":" + item.time.getMinutes();
+                    item.time = item.time.getTime() + 28800000;
+                    dateObj[tag] = Array.isArray(dateObj[tag]) ? dateObj[tag] : [];
+                    dateObj[tag].push(item.count);
                     delete item._id;
                 });
-                for(var value in result){
-                     resArr.push(result[value].reduce(function(x,y){return x+y}) / result[value].length);
+                console.log(dateObj);
+                for (var value in dateObj) {
+                    tempArr.push(dateObj[value].reduce(function (x, y) {
+                            return x + y
+                        }) / dateObj[value].length);
                 }
-                res.write(JSON.stringify(resArr));
+                for(var l = result.length; l--;){
+                    var returnObj = {
+                        time : result[l].time,
+                        count : tempArr[l]
+                    };
+                    resArr.push(returnObj);
+                }
+                res.write(JSON.stringify(resArr.reverse()));
                 res.end();
             });
         })
