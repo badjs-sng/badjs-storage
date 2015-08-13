@@ -293,6 +293,9 @@ module.exports = function () {
         })
         .use('/queryCount', connect.query())
         .use('/queryCount', function (req, res) {
+
+            logger.debug('query start time'+Date.now());
+
             //校验查询req的格式
             var result = validate(req, res);
 
@@ -332,9 +335,10 @@ module.exports = function () {
              delete items._id;
              })*/
             cursor.toArray(function (err, result) {
+                logger.debug('query cost time'+Date.now());
                 if (global.debug == true) {
                     logger.debug("query error is=" + JSON.stringify(err));
-                    logger.debug("query result is=" + JSON.stringify(result))
+                    logger.debug("query result is=" + JSON.stringify(result));
                 }
                 if (err) {
                     res.write(JSON.stringify(err));
@@ -443,6 +447,8 @@ module.exports = function () {
         })
         .use('/errorCountSvg', connect.query())
         .use('/errorCountSvg', function (req, res) {
+            logger.debug('query start time'+Date.now());
+
             req.query.startDate  = req.query.startDate - 5 * 24 * 60 * 60 * 1000;
             //校验查询req的格式
             var result = validate(req, res);
@@ -471,6 +477,7 @@ module.exports = function () {
             ]);
             cursor.toArray(function (err, result) {
                 var tempArr = [],resArr =[];
+                logger.debug('query cost time'+Date.now());
                 if (global.debug == true) {
                     logger.debug("query error is=" + JSON.stringify(err));
                     logger.debug("query result is=" + JSON.stringify(result))
