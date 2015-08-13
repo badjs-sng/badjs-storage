@@ -29,7 +29,7 @@ function insertErrorCount() {
             return;
         }
         collections.forEach(function (collection, key) {
-            if (collection.s.name.indexOf("badjs") < 0) {
+            if (collection.s.name.indexOf("badjs") < 0||collection.s.name.indexof('count_') > -1) {
                 return;
             }
             logger.info("start count " + collection.s.name);
