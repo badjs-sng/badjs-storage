@@ -48,7 +48,7 @@ function insertErrorCount() {
                 if (global.debug == true) {
                     logger.debug("query error is=" + JSON.stringify(err));
                     logger.debug('the query collections is' + JSON.stringify(collection));
-                    logger.debug("query result is=" + JSON.stringify(result));
+                    //logger.debug("query result is=" + JSON.stringify(result));
                 }
                 result.forEach(function (item) {
                     item.time = item._id.time;
@@ -72,7 +72,7 @@ function insertToMongo(name, data) {
             return;
         } else {
             if (global.debug == true) {
-                logger.debug(result);
+                //logger.debug(result);
             }
         }
     })

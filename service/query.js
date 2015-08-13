@@ -480,7 +480,7 @@ module.exports = function () {
                 logger.debug('query cost time'+Date.now());
                 if (global.debug == true) {
                     logger.debug("query error is=" + JSON.stringify(err));
-                    logger.debug("query result is=" + JSON.stringify(result))
+                    //logger.debug("query result is=" + JSON.stringify(result))
                 }
                 if (err) {
                     res.write(JSON.stringify(err));
