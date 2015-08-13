@@ -48,8 +48,8 @@ function insertErrorCount() {
             cursor.toArray(function (err, result) {
                 if (global.debug == true) {
                     logger.debug("query error is=" + JSON.stringify(err));
-                    logger.debug("query result is=" + JSON.stringify(result))
-
+                    logger.debug('the query collections is'+JSON.stringify(collection));
+                    logger.debug("query result is=" + JSON.stringify(result));
                 }
                 result.forEach(function (item) {
                     item.time = item._id.time;
@@ -108,7 +108,9 @@ function getErrorCount(appid,startTime,endTime){
 
 module.exports = {
     insertAuto:function(){
+        setTimeout(function(){
         insertErrorCount();
+        },60*1000)
     },
     getCount: function(appid,startTime,endTime){
         getErrorCount(appid,startTime,endTime);
