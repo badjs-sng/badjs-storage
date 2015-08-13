@@ -24,6 +24,10 @@ MongoClient.connect(url, function (err, db) {
 
 function insertErrorCount() {
     mongoDB.collections(function (error, collections) {
+        if(error){
+            logger.info("mongoDB.collections error " + JSON.stringify(error));
+            return;
+        }
         collections.forEach(function (collection, key) {
             if (collection.s.name.indexOf("badjs") < 0) {
                 return;
@@ -64,7 +68,6 @@ function insertErrorCount() {
 }
 
 function insertToMongo(name, data) {
-    logger.info(data);
     var collection = mongoDB.collection(dbName + name);
     collection.insert(data, function (err, result) {
         if (err) {
