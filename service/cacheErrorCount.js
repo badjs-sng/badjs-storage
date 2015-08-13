@@ -12,15 +12,14 @@ var saveDate;
 var url = global.MONGDO_URL;
 var mongoDB;
 // Use connect method to connect to the Server
-MongoClient.connect(url, function(err, db) {
-    if(err){
+MongoClient.connect(url, function (err, db) {
+    if (err) {
         logger.info("failed connect to server");
-    }else {
+    } else {
         logger.info("Connected correctly to server");
     }
     mongoDB = db;
 });
-
 
 
 function insertErrorCount() {
@@ -30,7 +29,7 @@ function insertErrorCount() {
                 return;
             }
             logger.info("start count " + collection.s.name);
-            var endDate = new Date(),startDate = new Date(new Date().getTime() - 6*60*60*1000);
+            var endDate = new Date(), startDate = new Date(new Date().getTime() - 6 * 60 * 60 * 1000);
             logger.debug(endDate);
             logger.debug(startDate);
             var cursor = collection.aggregate([
@@ -48,71 +47,73 @@ function insertErrorCount() {
             cursor.toArray(function (err, result) {
                 if (global.debug == true) {
                     logger.debug("query error is=" + JSON.stringify(err));
-                    logger.debug('the query collections is'+JSON.stringify(collection));
+                    logger.debug('the query collections is' + JSON.stringify(collection));
                     logger.debug("query result is=" + JSON.stringify(result));
                 }
                 result.forEach(function (item) {
                     item.time = item._id.time;
                     delete item._id;
                 });
-                if(result.length == 0){
-                    result.push({time:startDate, count:0});
+                if (result.length == 0) {
+                    result.push({time: startDate, count: 0});
                 }
-                insertToMongo(collection.s.name,result);
+                insertToMongo(collection.s.name, result);
             });
         })
     });
 }
 
-function insertToMongo(name,data){
+function insertToMongo(name, data) {
     logger.info(data);
-    var collection = mongoDB.collection(dbName+name);
-    collection.insert(data,function(err,result){
-        if(err){
-            console.log("insert mongo err:"+err);
+    var collection = mongoDB.collection(dbName + name);
+    collection.insert(data, function (err, result) {
+        if (err) {
+            console.log("insert mongo err:" + err);
             return;
-        }else{
-           logger.debug(result);
+        } else {
+            if (global.debug == true) {
+                logger.debug(result);
+            }
         }
     })
 }
 
-function getErrorCount(appid,startTime,endTime){
+function getErrorCount(appid, startTime, endTime) {
 
-    var collection = db.collection('count_badjslog_'+appid);
+    var collection = db.collection('count_badjslog_' + appid);
     var queryJson = {};
     queryJson.time = {$lt: endTime, $gt: startTime};
-    collection.find(queryJson).toArray(function(err,result){
-        if(err){
+    collection.find(queryJson).toArray(function (err, result) {
+        if (err) {
             console.log(err);
             return JSON.parse(err);
         }
-        result.map(function(ele){
-           ele.time = new Date(ele.time).getTime() + 28800000;
+        result.map(function (ele) {
+            ele.time = new Date(ele.time).getTime() + 28800000;
         });
         return JSON.parse(result);
     })
 
     /*var filePath = path.join('.','cache','cacheCountTotal','badjslog_'+appid),
      result = {};
-    if(fs.existsSync(filePath)){
-        result.ok = true;
-        result.data = JSON.parse(fs.readFileSync(filePath));
-    }else{
-        result.message = "file error";
-        result.ok = false;
-    }
-    return result;*/
+     if(fs.existsSync(filePath)){
+     result.ok = true;
+     result.data = JSON.parse(fs.readFileSync(filePath));
+     }else{
+     result.message = "file error";
+     result.ok = false;
+     }
+     return result;*/
 }
 
 
 module.exports = {
-    insertAuto:function(){
-        setTimeout(function(){
-        insertErrorCount();
-        },60*1000)
+    insertAuto: function () {
+        setTimeout(function () {
+            insertErrorCount();
+        }, 60 * 1000)
     },
-    getCount: function(appid,startTime,endTime){
-        getErrorCount(appid,startTime,endTime);
+    getCount: function (appid, startTime, endTime) {
+        getErrorCount(appid, startTime, endTime);
     }
 }

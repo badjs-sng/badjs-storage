@@ -262,7 +262,7 @@ module.exports = function () {
 
             queryJSON.level = {$in: json.level};
 
-            var limit = 5000;
+            var limit = 500;
 
             if (json.index - 0) {
                 json.index = (json.index - 0);
