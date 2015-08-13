@@ -293,7 +293,6 @@ module.exports = function () {
         })
         .use('/queryCount', connect.query())
         .use('/queryCount', function (req, res) {
-            console.log("request start");
             //校验查询req的格式
             var result = validate(req, res);
 
@@ -444,7 +443,6 @@ module.exports = function () {
         })
         .use('/errorCountSvg', connect.query())
         .use('/errorCountSvg', function (req, res) {
-            console.log("request start");
             req.query.startDate  = req.query.startDate - 5 * 24 * 60 * 60 * 1000;
             //校验查询req的格式
             var result = validate(req, res);
@@ -490,7 +488,6 @@ module.exports = function () {
                     dateObj[tag].push(item.count);
                     delete item._id;
                 });
-                console.log(dateObj);
                 for (var value in dateObj) {
                     tempArr.push(dateObj[value].reduce(function (x, y) {
                             return x + y
