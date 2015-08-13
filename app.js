@@ -1,7 +1,6 @@
 var log4js = require('log4js'),
     logger = log4js.getLogger();
 
-var cacheCount = require('./service/cacheErrorCount');
 
 var argv = process.argv.slice(2);
 if(argv.indexOf('--project') >= 0){
@@ -28,6 +27,7 @@ if ("shard" in GLOBAL.pjconfig.mongodb) {
 }
 var dispatcher = require(GLOBAL.pjconfig.acceptor.module)
   , save = require('./storage/MongodbStorage');
+var cacheCount = require('./service/cacheErrorCount');
 
 
 // use zmq to dispatch

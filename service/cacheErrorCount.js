@@ -24,13 +24,15 @@ MongoClient.connect(url, function(err, db) {
 
 
 function insertErrorCount() {
-    MongoClient.collections(function (error, collections) {
+    mongoDB.collections(function (error, collections) {
         collections.forEach(function (collection, key) {
             if (collection.s.name.indexOf("badjs") < 0) {
                 return;
             }
             logger.info("start count " + collection.s.name);
             var endDate = new Date(),startDate = new Date(new Date().getTime() - 6*60*60*1000);
+            logger.debug(endDate);
+            logger.debug(startDate);
             var cursor = collection.aggregate([
                 {$match: {'date': {$lt: endDate, $gt: startDate}}},
                 {
@@ -47,11 +49,15 @@ function insertErrorCount() {
                 if (global.debug == true) {
                     logger.debug("query error is=" + JSON.stringify(err));
                     logger.debug("query result is=" + JSON.stringify(result))
+
                 }
                 result.forEach(function (item) {
                     item.time = item._id.time;
                     delete item._id;
                 });
+                if(result.length == 0){
+                    result.push({time:startDate, count:0});
+                }
                 insertToMongo(collection.s.name,result);
             });
         })
@@ -59,13 +65,14 @@ function insertErrorCount() {
 }
 
 function insertToMongo(name,data){
-    var collection = db.collection(dbName+name);
+    logger.info(data);
+    var collection = mongoDB.collection(dbName+name);
     collection.insert(data,function(err,result){
         if(err){
             console.log("insert mongo err:"+err);
             return;
         }else{
-            console.log(result);
+           logger.debug(result);
         }
     })
 }
