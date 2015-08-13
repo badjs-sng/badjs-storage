@@ -30,6 +30,7 @@ function insertErrorCount() {
                 return;
             }
             logger.info("start count " + collection.s.name);
+            var endDate = new Date(),startDate = new Date(new Date().getTime() - 6*60*60*1000);
             var cursor = collection.aggregate([
                 {$match: {'date': {$lt: endDate, $gt: startDate}}},
                 {
@@ -48,7 +49,7 @@ function insertErrorCount() {
                     logger.debug("query result is=" + JSON.stringify(result))
                 }
                 result.forEach(function (item) {
-                    item.time = new Date(item._id.time).getTime() + 28800000;
+                    item.time = item._id.time;
                     delete item._id;
                 });
                 insertToMongo(collection.s.name,result);
@@ -79,6 +80,9 @@ function getErrorCount(appid,startTime,endTime){
             console.log(err);
             return JSON.parse(err);
         }
+        result.map(function(ele){
+           ele.time = new Date(ele.time).getTime() + 28800000;
+        });
         return JSON.parse(result);
     })
 

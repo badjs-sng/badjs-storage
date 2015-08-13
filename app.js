@@ -1,7 +1,7 @@
 var log4js = require('log4js'),
     logger = log4js.getLogger();
 
-
+var cacheCount = require('./service/cacheErrorCount');
 
 var argv = process.argv.slice(2);
 if(argv.indexOf('--project') >= 0){
@@ -39,5 +39,6 @@ logger.log('badjs-storage start ...');
 
 setTimeout(function (){
     require('./service/query')();
+    cacheCount.insertAuto();
     require('./service/autoClear')();
 },1000);
