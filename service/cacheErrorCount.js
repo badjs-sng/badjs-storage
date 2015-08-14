@@ -24,7 +24,7 @@ MongoClient.connect(url, function (err, db) {
 
 function insertErrorCount() {
     mongoDB.collections(function (error, collections) {
-        if(error){
+        if(error||collections){
             logger.info("mongoDB.collections error " + JSON.stringify(error));
             return;
         }
