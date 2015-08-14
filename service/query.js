@@ -63,6 +63,11 @@ var validate = function (req, rep) {
         return {ok: false, msg: 'id is required'};
     }
 
+    var datePeriod;
+    if (isNaN(( datePeriod = req.query.datePeriod - 0)) || datePeriod <= 0 || datePeriod >= 9999) {
+        return {ok: false, msg: 'id is required'};
+    }
+
     if (!json.startDate || !json.endDate) {
         return {ok: false, msg: 'startDate or endDate is required'};
     }
@@ -294,7 +299,7 @@ module.exports = function () {
         .use('/queryCount', connect.query())
         .use('/queryCount', function (req, res) {
 
-            logger.info('query start time'+Date.now());
+            logger.info('query start time' + Date.now());
 
             //校验查询req的格式
             var result = validate(req, res);
@@ -310,10 +315,10 @@ module.exports = function () {
             var json = req.query,
                 id = json.id, startDate = json.startDate, endDate = json.endDate,
                 dateNow = new Date();
-            if (new Date(startDate).getDate() - dateNow.getDate() > 5) {
+            if (new Date(startDate).getDate() - dateNow.getDate() > 1) {
                 var dateTody = dateNow.getFullYear() + '/' + dateNow.getMonth() + '/' + dateNow.getDate(),
                     startTime = startDate,
-                    endTime = startDate = Date.parse(dateTody) - 5 * 24 * 60 * 60 * 1000,
+                    endTime = startDate = Date.parse(dateTody) - 1 * 24 * 60 * 60 * 1000,
                     cacheResultArr = cacheCount.getCount(id, startTime, endTime);
             }
             var cursor = mongoDB.collection('badjslog_' + id).aggregate([
@@ -335,7 +340,7 @@ module.exports = function () {
              delete items._id;
              })*/
             cursor.toArray(function (err, result) {
-                logger.info('query cost time'+Date.now());
+                logger.info('query cost time' + Date.now());
                 if (global.debug == true) {
                     logger.debug("query error is=" + JSON.stringify(err));
                     logger.debug("query result is=" + JSON.stringify(result));
@@ -447,9 +452,11 @@ module.exports = function () {
         })
         .use('/errorCountSvg', connect.query())
         .use('/errorCountSvg', function (req, res) {
-            logger.info('query start time'+Date.now());
-
-            req.query.startDate  = req.query.startDate - 5 * 24 * 60 * 60 * 1000;
+            logger.info('query start time' + Date.now());
+            var datePeriod = (parseInt(req.query.datePeriod) || 5) - -1,
+                oneDay = 24 * 60 * 60 * 1000;
+            req.query.startDate = req.query.startDate - datePeriod*oneDay;
+            req.query.endDate = req.query.endDate - oneDay;
             //校验查询req的格式
             var result = validate(req, res);
             var dateObj = {};
@@ -462,50 +469,56 @@ module.exports = function () {
                 return;
             }
             var json = req.query,
-                id = json.id, startDate = json.startDate, endDate = json.endDate;
-            var cursor = mongoDB.collection('badjslog_' + id).aggregate([
-                {$match: {'date': {$lt: endDate, $gt: startDate}}},
-                {
-                    $group: {
-                        _id: {
-                            time: {$dateToString: {format: "%Y-%m-%d %H:%M", date: '$date'}}
-                        },
-                        count: {$sum: 1}
-                    }
-                },
-                {$sort: {"_id": 1}},
-            ]);
-            cursor.toArray(function (err, result) {
-                var tempArr = [],resArr =[];
-                logger.info('query cost time'+Date.now());
-                if (global.debug == true) {
-                    logger.debug("query error is=" + JSON.stringify(err));
-                    //logger.debug("query result is=" + JSON.stringify(result))
-                }
-                if (err) {
-                    res.write(JSON.stringify(err));
-                    res.end();
-                    return;
-                }
-                result.map(function (item) {
-                    item.time = new Date(item._id.time);
-                    var tag = item.time.getHours() + ":" + item.time.getMinutes();
-                    item.time = item.time.getTime() + 28800000;
-                    dateObj[tag] = Array.isArray(dateObj[tag]) ? dateObj[tag] : [];
-                    dateObj[tag].push(item.count);
-                    delete item._id;
-                });
+                id = json.id, startDate = json.startDate, endDate = json.endDate,
+                result = cacheCount.getCount(id, startDate, endDate), resArr = [];
+            if (global.debug == true) {
+                logger.debug('the cache error count query result is ' + JSON.stringify(result));
+            }
+            /* var cursor = mongoDB.collection('badjslog_' + id).aggregate([
+             {$match: {'date': {$lt: endDate, $gt: startDate}}},
+             {
+             $group: {
+             _id: {
+             time: {$dateToString: {format: "%Y-%m-%d %H:%M", date: '$date'}}
+             },
+             count: {$sum: 1}
+             }
+             },
+             {$sort: {"_id": 1}},
+             ]);
+             cursor.toArray(function (err, result) {
+             var tempArr = [],resArr =[];
+             logger.info('query cost time'+Date.now());
+             if (global.debug == true) {
+             logger.debug("query error is=" + JSON.stringify(err));
+             //logger.debug("query result is=" + JSON.stringify(result))
+             }
+             if (err) {
+             res.write(JSON.stringify(err));
+             res.end();
+             return;
+             }*/
+            result.map(function (item) {
+                item.time = new Date(item._id.time);
+                var tag = item.time.getHours() + ":" + item.time.getMinutes();
+                item.time = item.time.getTime() + 28800000;
+                dateObj[tag] = Array.isArray(dateObj[tag]) ? dateObj[tag] : [];
+                dateObj[tag].push(item.count);
+                delete item._id;
                 for (var value in dateObj) {
                     tempArr.push(dateObj[value].reduce(function (x, y) {
                             return x + y
                         }) / dateObj[value].length);
                 }
-                for(var l = result.length; l--;){
+                for (var l = result.length; l--;) {
                     var returnObj = {
-                        time : result[l].time,
-                        count : tempArr[l]
+                        time: result[l].time,
+                        count: tempArr[l]
                     };
                     resArr.push(returnObj);
+                }
+                if (global.debug == true) {
+                    logger.debug('the svg query result is ' + JSON.stringify(resArr.reverse()));
                 }
                 res.write(JSON.stringify(resArr.reverse()));
                 res.end();

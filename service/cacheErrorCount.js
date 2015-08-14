@@ -24,18 +24,19 @@ MongoClient.connect(url, function (err, db) {
 
 function insertErrorCount() {
     mongoDB.collections(function (error, collections) {
-        if(error||collections){
+        if (error || collections) {
             logger.info("mongoDB.collections error " + JSON.stringify(error));
+            logger.info('mongoDB collections is' + JSON.stringify(collections[0].s.name));
             return;
         }
+        var endDate = new Date(), startDate = new Date(new Date().getTime() - 6 * 60 * 60 * 1000);
         collections.forEach(function (collection, key) {
-            if (collection.s.name.indexOf("badjs") < 0||collection.s.name.indexof('count_') > -1) {
+            if (collection.s.name.indexOf("badjs") < 0 || collection.s.name.indexof('count_') > -1) {
                 return;
             }
             logger.info("start count " + collection.s.name);
-            var endDate = new Date(), startDate = new Date(new Date().getTime() - 6 * 60 * 60 * 1000);
-            logger.debug(endDate);
-            logger.debug(startDate);
+            logger.debug("start count endDate" + endDate);
+            logger.debug("start count startDate" + startDate);
             var cursor = collection.aggregate([
                 {$match: {'date': {$lt: endDate, $gt: startDate}}},
                 {
@@ -55,7 +56,7 @@ function insertErrorCount() {
                     //logger.debug("query result is=" + JSON.stringify(result));
                 }
                 result.forEach(function (item) {
-                    item.time = item._id.time;
+                    item.time = new Date(item._id.time);
                     delete item._id;
                 });
                 if (result.length == 0) {
@@ -112,9 +113,9 @@ function getErrorCount(appid, startTime, endTime) {
 
 module.exports = {
     insertAuto: function () {
-        setTimeout(function () {
+        setInterval(function () {
             insertErrorCount();
-        }, 60 * 1000)
+        }, 6 * 60 * 60 * 1000);// work by every six hours;
     },
     getCount: function (appid, startTime, endTime) {
         getErrorCount(appid, startTime, endTime);
