@@ -63,10 +63,6 @@ var validate = function (req, rep) {
         return {ok: false, msg: 'id is required'};
     }
 
-    var datePeriod;
-    if (isNaN(( datePeriod = req.query.datePeriod - 0)) || datePeriod <= 0 || datePeriod >= 9999) {
-        return {ok: false, msg: 'id is required'};
-    }
 
     if (!json.startDate || !json.endDate) {
         return {ok: false, msg: 'startDate or endDate is required'};
@@ -210,6 +206,34 @@ var getErrorMsgFromCache = function (query, isJson, cb) {
         returnValue(err, isJson ? doc : JSON.stringify(doc));
     });
 };
+
+var formateArr = function (result, startDateTime) {
+    var resArr = [], dateObj = {};
+    result && result.map(function (item) {
+        item.time = new Date(item._id.time);
+        var tag = item.time.getHours() + ":" + item.time.getMinutes();
+        item.time = item.time.getTime() + 28800000;
+        dateObj[tag] = Array.isArray(dateObj[tag]) ? dateObj[tag] : [];
+        dateObj[tag].push(item.count);
+        delete item._id;
+    });
+    for (var value in dateObj) {
+        console.log(dateObj[value].reduce(function (x, y) {
+                return x + y
+            }) / dateObj[value].length);
+        var returnObj = {
+            time: Date.parse(startDateTime + ' ' + value),
+            count: dateObj[value].reduce(function (x, y) {
+                    return x + y
+                }) / dateObj[value].length
+        }
+        resArr.push(returnObj);
+    }
+    resArr = resArr.sort(function(pre,nex){
+        return pre.time - nex.time;
+    });
+    return resArr;
+}
 
 
 module.exports = function () {
@@ -454,12 +478,13 @@ module.exports = function () {
         .use('/errorCountSvg', function (req, res) {
             logger.info('query start time' + Date.now());
             var datePeriod = (parseInt(req.query.datePeriod) || 5) - -1,
-                oneDay = 24 * 60 * 60 * 1000;
-            req.query.startDate = req.query.startDate - datePeriod*oneDay;
-            req.query.endDate = req.query.endDate - oneDay;
+                oneDay = 24 * 60 * 60 * 1000,
+                startTime = req.query.startDate, endTime = req.query.endDate,
+                startDateTime = dateFormat(new Date(startTime -= 0), "yyyy-MM-dd");
+            req.query.startDate = startTime - datePeriod * oneDay;
+            req.query.endDate = endTime - oneDay;
             //校验查询req的格式
-            var result = validate(req, res);
-            var dateObj = {};
+            var result = validate(req, res), resArr = [];
             if (!result.ok) {
                 res.writeHead(403, {
                     'Content-Type': 'text/html'
@@ -469,65 +494,61 @@ module.exports = function () {
                 return;
             }
             var json = req.query,
-                id = json.id, startDate = json.startDate, endDate = json.endDate,
-                result = cacheCount.getCount(id, startDate, endDate), resArr = [];
-            if (global.debug == true) {
-                logger.debug('the cache error count query result is ' + JSON.stringify(result));
-            }
-            /* var cursor = mongoDB.collection('badjslog_' + id).aggregate([
-             {$match: {'date': {$lt: endDate, $gt: startDate}}},
-             {
-             $group: {
-             _id: {
-             time: {$dateToString: {format: "%Y-%m-%d %H:%M", date: '$date'}}
-             },
-             count: {$sum: 1}
-             }
-             },
-             {$sort: {"_id": 1}},
-             ]);
-             cursor.toArray(function (err, result) {
-             var tempArr = [],resArr =[];
-             logger.info('query cost time'+Date.now());
-             if (global.debug == true) {
-             logger.debug("query error is=" + JSON.stringify(err));
-             //logger.debug("query result is=" + JSON.stringify(result))
-             }
-             if (err) {
-             res.write(JSON.stringify(err));
-             res.end();
-             return;
-             }*/
-            result.map(function (item) {
-                item.time = new Date(item._id.time);
-                var tag = item.time.getHours() + ":" + item.time.getMinutes();
-                item.time = item.time.getTime() + 28800000;
-                dateObj[tag] = Array.isArray(dateObj[tag]) ? dateObj[tag] : [];
-                dateObj[tag].push(item.count);
-                delete item._id;
-                for (var value in dateObj) {
-                    tempArr.push(dateObj[value].reduce(function (x, y) {
-                            return x + y
-                        }) / dateObj[value].length);
-                }
-                for (var l = result.length; l--;) {
-                    var returnObj = {
-                        time: result[l].time,
-                        count: tempArr[l]
-                    };
-                    resArr.push(returnObj);
+                id = json.id, startDate = json.startDate, endDate = json.endDate;
+            cacheCount.getCount(id, startDate, endDate, function (err, result) {
+                result = JSON.parse(result);
+                if (err) {
+                    res.write(JSON.stringify(err));
+                    res.end();
+                    return;
                 }
                 if (global.debug == true) {
-                    logger.debug('the svg query result is ' + JSON.stringify(resArr.reverse()));
+                    logger.debug('the cache error count query result is ' + JSON.stringify(result));
                 }
-                res.write(JSON.stringify(resArr.reverse()));
-                res.end();
+                if (result.length != 0) {
+                    resArr = formateArr(result, startDateTime);
+                    if (global.debug == true) {
+                        logger.debug('the svg query result is ' + JSON.stringify(resArr.reverse()));
+                    }
+                    res.write(JSON.stringify(resArr.reverse()));
+                    res.end();
+                    return;
+                }
+                var cursor = mongoDB.collection('badjslog_' + id).aggregate([
+                    {$match: {'date': {$lt: endDate, $gt: startDate}}},
+                    {
+                        $group: {
+                            _id: {
+                                time: {$dateToString: {format: "%Y-%m-%d %H:%M", date: '$date'}}
+                            },
+                            count: {$sum: 1}
+                        }
+                    },
+                    {$sort: {"_id": 1}},
+                ]);
+                cursor.toArray(function (err, result) {
+                    logger.info('query cost time' + Date.now());
+                    if (global.debug == true) {
+                        logger.debug("query error is=" + JSON.stringify(err));
+                    }
+                    if (err) {
+                        res.write(JSON.stringify(err));
+                        res.end();
+                        return;
+                    }
+                    resArr = formateArr(result, startDateTime);
+                    if (global.debug == true) {
+                        logger.debug('the svg query result is ' + JSON.stringify(resArr.reverse()));
+                    }
+                    res.write(JSON.stringify(resArr.reverse()));
+                    res.end();
+                    return;
+                });
             });
-        })
-        .listen(9000);
+        }).listen(9000);
 
     logger.info('query server start ... ')
-}
+};
 
 
 

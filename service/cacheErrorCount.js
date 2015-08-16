@@ -82,20 +82,18 @@ function insertToMongo(name, data) {
     })
 }
 
-function getErrorCount(appid, startTime, endTime) {
+function getErrorCount(appid, startTime, endTime,callback) {
 
-    var collection = db.collection('count_badjslog_' + appid);
+    var collection = mongoDB.collection('count_badjslog_' + appid);
     var queryJson = {};
     queryJson.time = {$lt: endTime, $gt: startTime};
     collection.find(queryJson).toArray(function (err, result) {
         if (err) {
-            console.log(err);
-            return JSON.parse(err);
+            callback&&callback(JSON.stringify(err));
+            return;
         }
-        result.map(function (ele) {
-            ele.time = new Date(ele.time).getTime() + 28800000;
-        });
-        return JSON.parse(result);
+        logger.debug(callback);
+        callback&&callback(null,JSON.stringify(result));
     })
 
     /*var filePath = path.join('.','cache','cacheCountTotal','badjslog_'+appid),
@@ -117,7 +115,7 @@ module.exports = {
             insertErrorCount();
         }, 6 * 60 * 60 * 1000);// work by every six hours;
     },
-    getCount: function (appid, startTime, endTime) {
-        getErrorCount(appid, startTime, endTime);
+    getCount: function (appid, startTime, endTime,callback) {
+        getErrorCount(appid, startTime, endTime,callback);
     }
 }
