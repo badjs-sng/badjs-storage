@@ -1,16 +1,14 @@
 var MongoClient = require('mongodb').MongoClient,
-    connect = require('connect');
+    connect = require('connect'),
+    fs = require("fs"),
+    path = require("path"),
+    log4js = require('log4js'),
+    logger = log4js.getLogger(),
+    dbName = "count_log_",
+    saveDate,
+    url = 'mongodb://localhost:27017/badjs',
+    mongoDB;
 
-var fs = require("fs"),
-    path = require("path");
-
-var log4js = require('log4js'),
-    logger = log4js.getLogger();
-var dbName = "count_log_";
-var saveDate;
-
-var url = global.MONGDO_URL;
-var mongoDB;
 // Use connect method to connect to the Server
 MongoClient.connect(url, function (err, db) {
     if (err) {
@@ -50,11 +48,9 @@ function insertErrorCount() {
                 {$sort: {"_id": 1}}
             ]);
             cursor.toArray(function (err, result) {
-                if (global.debug == true) {
-                    logger.debug("query error is=" + err);
-                    logger.debug('the query collections is' + collection);
-                    //logger.debug("query result is=" + JSON.stringify(result));
-                }
+                logger.info("query error is=" + err);
+                logger.info('the query collections is' + collection);
+                //logger.debug("query result is=" + JSON.stringify(result));
                 result.forEach(function (item) {
                     item.time = new Date(item._id.time);
                     delete item._id;
@@ -70,53 +66,18 @@ function insertErrorCount() {
 }
 
 function insertToMongo(name, data) {
+    logger.info('the inset work is start');
     var collection = mongoDB.collection(dbName + name);
     collection.insert(data, function (err, result) {
         if (err) {
             console.log("insert mongo err:" + err);
             return;
         } else {
-            if (global.debug == true) {
-                //logger.debug(result);
-            }
+            logger.debug(result);
         }
     })
 }
 
-function getErrorCount(appid, startTime, endTime,callback) {
-
-    var collection = mongoDB.collection('count_log_' + appid);
-    var queryJson = {};
-    queryJson.time = {$lt: endTime, $gt: startTime};
-    collection.find(queryJson).toArray(function (err, result) {
-        if (err) {
-            callback&&callback(JSON.stringify(err));
-            return;
-        }
-        logger.debug(callback);
-        callback&&callback(null,JSON.stringify(result));
-    })
-
-    /*var filePath = path.join('.','cache','cacheCountTotal','badjslog_'+appid),
-     result = {};
-     if(fs.existsSync(filePath)){
-     result.ok = true;
-     result.data = JSON.parse(fs.readFileSync(filePath));
-     }else{
-     result.message = "file error";
-     result.ok = false;
-     }
-     return result;*/
-}
-
-
-module.exports = {
-    insertAuto: function () {
-        setInterval(function () {
-            insertErrorCount();
-        }, 6 * 60 * 60 * 1000);// work by every six hours;
-    },
-    getCount: function (appid, startTime, endTime,callback) {
-        getErrorCount(appid, startTime, endTime,callback);
-    }
-}
+setTimeout(function () {
+    insertErrorCount();
+}, 10000);
