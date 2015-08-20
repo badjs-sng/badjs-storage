@@ -305,8 +305,8 @@ module.exports = function () {
 
 
             mongoDB.collection('badjslog_' + id).find(queryJSON, function (error, cursor) {
-                res.writeHead(200, {
-                    'Content-Type': 'text/json'
+                        res.writeHead(200, {
+                            'Content-Type': 'text/json'
                 });
 
                 cursor.sort({'date': -1}).skip(json.index * limit).limit(limit).toArray(function (err, item) {
