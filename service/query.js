@@ -154,8 +154,6 @@ var errorMsgTop = function (json, cb) {
      return ;
      }*/
 
-    var total = cacheTotal.getTotal({id: id, key: totalKey});
-
     var cursor = mongoDB.collection('badjslog_' + id).aggregate(
         [
             {$match: queryJSON},
@@ -166,14 +164,21 @@ var errorMsgTop = function (json, cb) {
         {allowDiskUse: true}
     );
 
-    cursor.toArray(function (err, docs) {
+    cacheTotal.getTotal({id: id, key: totalKey}, function (err, total) {
         if (err) {
-            cb(err)
+            logger.error('the cache total is err,the err is' + err);
+            cb(err);
             return;
         }
-        outResult.item = docs;
-        outResult.pv = total;
-        cb(err, outResult);
+        cursor.toArray(function (err, docs) {
+            if (err) {
+                cb(err)
+                return;
+            }
+            outResult.item = docs;
+            outResult.pv = total;
+            cb(err, outResult);
+        });
     });
 
 //    });
@@ -183,7 +188,7 @@ var errorMsgTop = function (json, cb) {
 var getErrorMsgFromCache = function (query, isJson, cb) {
     var fileName = dateFormat(new Date(query.startDate), "yyyy-MM-dd") + "__" + query.id;
     var filePath = path.join(".", "cache", "errorMsg", fileName);
-
+    logger.info('the file name is ' + filePath);
     var returnValue = function (err, doc) {
         if (query.noReturn) {
             cb(err);
@@ -395,8 +400,6 @@ module.exports = function () {
                 res.end(JSON.stringify(error));
                 return;
             }
-
-
             req.query.startDate = req.query.startDate - 0;
 
             getErrorMsgFromCache(req.query, false, function (error, doc) {
@@ -455,7 +458,7 @@ module.exports = function () {
             logger.info('query start time' + Date.now());
             var datePeriod = (parseInt(req.query.datePeriod) || 5) - -1,
                 oneDay = 24 * 60 * 60 * 1000;
-            req.query.startDate = req.query.startDate - datePeriod*oneDay;
+            req.query.startDate = req.query.startDate - datePeriod * oneDay;
             req.query.endDate = req.query.endDate - oneDay;
             //校验查询req的格式
             var result = validate(req, res);

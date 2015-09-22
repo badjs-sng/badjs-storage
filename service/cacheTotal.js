@@ -1,13 +1,11 @@
 var fs = require("fs");
-var path=require("path");
+var path = require("path");
 
 var log4js = require('log4js'),
     logger = log4js.getLogger();
 
 
-
-
-var dateFormat  = function (date , fmt){
+var dateFormat = function (date, fmt) {
     var o = {
         "M+": date.getMonth() + 1, //月份
         "d+": date.getDate(), //日
@@ -23,67 +21,86 @@ var dateFormat  = function (date , fmt){
     return fmt;
 }
 
-var key = dateFormat(new Date , "yyyy-MM-dd");
+var key = dateFormat(new Date, "yyyy-MM-dd");
 var saveData = {};
 GLOBAL.total = {};
 GLOBAL.total[key] = saveData;
 
-var existFile = path.join("." , "cache" , "cacheTotal" , key);
+var existFile = path.join(".", "cache", "cacheTotal", key);
 
-if(fs.existsSync(existFile)){
+if (fs.existsSync(existFile)) {
     logger.info("load exist file  = " + existFile);
-    try{
-        saveData =  JSON.parse(fs.readFileSync(existFile));
-    }catch(e){
-        saveData= {};
+    try {
+        saveData = JSON.parse(fs.readFileSync(existFile));
+    } catch (e) {
+        saveData = {};
     }
 
 }
 
-setInterval(function (){
-    var filePath = path.join("." , "cache" , "cacheTotal" , key);
-    fs.writeFileSync(filePath , JSON.stringify(saveData));
+setInterval(function () {
+    var filePath = path.join(".", "cache", "cacheTotal", key);
+    fs.writeFileSync(filePath, JSON.stringify(saveData));
 
     logger.debug("save into disk , key = " + key);
 
     // clear old data
-    var newKey = dateFormat(new Date , "yyyy-MM-dd");
-    if(newKey != key){
+    var newKey = dateFormat(new Date, "yyyy-MM-dd");
+    if (newKey != key) {
         logger.debug("new day  and clear old data , newkey = " + key);
         key = newKey;
         GLOBAL.total = {};
         GLOBAL.total[key] = saveData = {};
     }
-},300000);
+}, 300000);
 
-module.exports ={
-        increase : function (data){
-            var count = saveData[data.id];
-            if(count >=1){
-                count ++;
-            }else {
-                count = 1;
-            }
-            saveData[data.id] = count;
-        },
-
-        getTotal : function (data){
-            if(!GLOBAL.total[data.key] ||  "{}" == JSON.stringify(GLOBAL.total[data.key])){
-                var filePath = path.join("." , "cache" , "cacheTotal" , data.key);
-                try{
-                    var json = JSON.parse(fs.readFileSync(filePath));
-                    GLOBAL.total[data.key] = json;
-                }catch(e){
-                    logger.error("load cacheTotal fail :" + JSON.stringify(data));
-                    return 0;
-                }
-            }
-
-            var count = GLOBAL.total[data.key][data.id];
-            if( count >0 ){
-               return count;
-            }else {
-                return 0;
-            }
+module.exports = {
+    increase: function (data) {
+        var count = saveData[data.id];
+        if (count >= 1) {
+            count++;
+        } else {
+            count = 1;
         }
+        saveData[data.id] = count;
+    },
+    getTotal: function (data, callback) {
+        if (!GLOBAL.total[data.key] || "{}" == JSON.stringify(GLOBAL.total[data.key])) {
+            var filePath = path.join(".", "cache", "cacheTotal", data.key);
+            fs.readFile(filePath, function (err, json) {
+                if (err) {
+                    logger.error("load cacheTotal fail :" + JSON.stringify(data));
+                    callback(err);
+                }
+                GLOBAL.total[data.key] = json;
+                var count = GLOBAL.total[data.key][data.id];
+                if (count > 0) {
+                    callback(null, json);
+                } else {
+                    callback({err: 'the count is 0'});
+                }
+            });
+
+        }
+
     }
+    /*getTotal : function (data){
+     if(!GLOBAL.total[data.key] ||  "{}" == JSON.stringify(GLOBAL.total[data.key])){
+     var filePath = path.join("." , "cache" , "cacheTotal" , data.key);
+     try{
+     var json = JSON.parse(fs.readFileSync(filePath));
+     GLOBAL.total[data.key] = json;
+     }catch(e){
+     logger.error("load cacheTotal fail :" + JSON.stringify(data));
+     return 0;
+     }
+     }
+
+     var count = GLOBAL.total[data.key][data.id];
+     if( count >0 ){
+     return count;
+     }else {
+     return 0;
+     }
+     }*/
+}
