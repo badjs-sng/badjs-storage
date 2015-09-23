@@ -70,14 +70,14 @@ module.exports = {
             fs.readFile(filePath, function (err, json) {
                 if (err) {
                     logger.error("load cacheTotal fail :" + JSON.stringify(data));
-                    callback(err);
+                    callback&&callback(err);
                 }
                 GLOBAL.total[data.key] = json;
                 var count = GLOBAL.total[data.key][data.id];
                 if (count > 0) {
-                    callback(null, json);
+                    callback&&callback(null, json);
                 } else {
-                    callback({err: 'the count is 0'});
+                    callback&&callback({err: 'the count is 0'});
                 }
             });
 
