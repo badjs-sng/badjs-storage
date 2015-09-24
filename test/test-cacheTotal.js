@@ -12,7 +12,7 @@ var cacheTotal = require('../service/cacheTotal');
 //    cacheTotal.increase({id: 2})
 //}, 2000);
 
-cacheTotal.getTotal({key: "2015-09-24", id: 24}, function (err, data) {
+cacheTotal.getTotal({key: "2015-09-23", id: 24}, function (err, data) {
     console.log('ri le gou le:', err, data);
 });
 

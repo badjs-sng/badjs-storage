@@ -161,6 +161,7 @@ var errorMsgTop = function (json, cb) {
     );
 
     cacheTotal.getTotal({id: id, key: totalKey}, function (err, total) {
+        logger.info('[query total] ' + '{id:' + id + ', key:' + totalKey + ', err:'+ err + ', total:' + total + '}');
         if (err) {
             logger.error('the cache total is err,the err is' + err);
             cb(err);
@@ -184,14 +185,14 @@ var errorMsgTop = function (json, cb) {
 var getErrorMsgFromCache = function (query, isJson, cb) {
     var fileName = dateFormat(new Date(query.startDate), "yyyy-MM-dd") + "__" + query.id;
     var filePath = path.join(".", "cache", "errorMsg", fileName);
-    logger.info('the file name is ' + filePath);
+    logger.info('the file name is ' + filePath + '; query:' + query + '; isJson:' + isJson);
     var returnValue = function (err, doc) {
         if (query.noReturn) {
             cb(err);
         } else {
             cb(err, doc);
         }
-    }
+    };
     if (fs.existsSync(filePath)) {
         logger.info("get ErrorMsg from cache id=" + query.id);
         if (isJson) {
@@ -427,10 +428,11 @@ module.exports = function () {
             req.query.startDate = req.query.startDate - 0;
 
             getErrorMsgFromCache(req.query, false, function (error, doc) {
+                logger.info('[errorMsgTop http response] error:'+ error + ', data:' + doc.toString());
                 res.writeHead(200, {
                     'Content-Type': 'text/json'
                 });
-                res.write(doc);
+                res.write(doc.toString());
                 res.end();
             });
 

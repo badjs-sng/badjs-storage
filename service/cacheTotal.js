@@ -52,7 +52,7 @@ setInterval(function () {
         GLOBAL.total = {};
         GLOBAL.total[key] = saveData = {};
     }
-}, 300000);
+}, 180000);
 
 module.exports = {
     increase: function (data) {
@@ -67,7 +67,7 @@ module.exports = {
     getTotal: function (data, callback) {
         callback = callback || (function(){});
         var filecb = function(err, d){
-            logger.info('cacheTotal filecb: [err:' + err + '],data:' +  JSON.stringify(d));
+            logger.info('cacheTotal filecb: [err:' + err + '],data:' + JSON.stringify(d) + ',key:' + d[data.id]);
             if (!err && d && d[data.id] > 0) {
                 callback(null, d[data.id]);
             } else {
@@ -76,12 +76,13 @@ module.exports = {
         };
         if (!GLOBAL.total[data.key] || "{}" == JSON.stringify(GLOBAL.total[data.key])) {
             var filePath = path.join(".", "cache", "cacheTotal", data.key);
+            logger.info('cacheTotal readfile'+filePath);
             fs.readFile(filePath, function (err, json) {
                 if (err) {
                     logger.error("load cacheTotal fail [" + err + "], path:" + filePath + ';' + JSON.stringify(data));
                     filecb(err);
                 }else{
-                    GLOBAL.total[data.key] = JSON.parse(json);
+                    json = GLOBAL.total[data.key] = JSON.parse(json);
                     filecb(err, json);
                 }
 
