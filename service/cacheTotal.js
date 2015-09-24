@@ -67,10 +67,9 @@ module.exports = {
     getTotal: function (data, callback) {
         callback = callback || (function(){});
         var filecb = function(err, d){
-            logger.info('' + JSON.stringify(d));
-            var count = d[data.id];
-            if (!err && count > 0) {
-                callback(null, count);
+            logger.info('cacheTotal filecb: [err:' + err + '],data:' +  JSON.stringify(d));
+            if (!err && d && d[data.id] > 0) {
+                callback(null, d[data.id]);
             } else {
                 callback({err: 'the count is 0'}, 0);
             }
@@ -79,10 +78,13 @@ module.exports = {
             var filePath = path.join(".", "cache", "cacheTotal", data.key);
             fs.readFile(filePath, function (err, json) {
                 if (err) {
-                    logger.error("load cacheTotal fail :" + JSON.stringify(data));
+                    logger.error("load cacheTotal fail [" + err + "], path:" + filePath + ';' + JSON.stringify(data));
+                    filecb(err);
+                }else{
+                    GLOBAL.total[data.key] = JSON.parse(json);
+                    filecb(err, json);
                 }
-                GLOBAL.total[data.key] = json;
-                filecb(err, json);
+
             });
         }else{
             filecb(null, GLOBAL.total[data.key]);
