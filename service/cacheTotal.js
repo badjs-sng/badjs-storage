@@ -65,35 +65,40 @@ module.exports = {
         saveData[data.id] = count;
     },
     getTotal: function (data, callback) {
+        callback = callback || (function(){});
+        var filecb = function(err, d){
+            logger.info('' + JSON.stringify(d));
+            var count = d[data.id];
+            if (!err && count > 0) {
+                callback(null, count);
+            } else {
+                callback({err: 'the count is 0'}, 0);
+            }
+        };
         if (!GLOBAL.total[data.key] || "{}" == JSON.stringify(GLOBAL.total[data.key])) {
             var filePath = path.join(".", "cache", "cacheTotal", data.key);
             fs.readFile(filePath, function (err, json) {
                 if (err) {
                     logger.error("load cacheTotal fail :" + JSON.stringify(data));
-                    callback && callback(err);
                 }
                 GLOBAL.total[data.key] = json;
-                var count = GLOBAL.total[data.key][data.id];
-                if (count > 0) {
-                    callback && callback(null, count);
-                } else {
-                    callback && callback({err: 'the count is 0'});
-                }
+                filecb(err, json);
             });
-
+        }else{
+            filecb(null, GLOBAL.total[data.key]);
         }
 
     }
     /*getTotal : function (data){
      if(!GLOBAL.total[data.key] ||  "{}" == JSON.stringify(GLOBAL.total[data.key])){
-     var filePath = path.join("." , "cache" , "cacheTotal" , data.key);
-     try{
-     var json = JSON.parse(fs.readFileSync(filePath));
-     GLOBAL.total[data.key] = json;
-     }catch(e){
-     logger.error("load cacheTotal fail :" + JSON.stringify(data));
-     return 0;
-     }
+        var filePath = path.join("." , "cache" , "cacheTotal" , data.key);
+        try{
+            var json = JSON.parse(fs.readFileSync(filePath));
+            GLOBAL.total[data.key] = json;
+        }catch(e){
+            logger.error("load cacheTotal fail :" + JSON.stringify(data));
+            return 0;
+        }
      }
 
      var count = GLOBAL.total[data.key][data.id];
@@ -103,4 +108,4 @@ module.exports = {
      return 0;
      }
      }*/
-}
+};
