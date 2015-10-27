@@ -1,12 +1,15 @@
 var log4js = require('log4js'),
     logger = log4js.getLogger();
 
+var path = require("path");
+
+
 
 var argv = process.argv.slice(2);
 if(argv.indexOf('--project') >= 0){
-    GLOBAL.pjconfig =  require('./project.debug.json');
+    GLOBAL.pjconfig =  require(path.join(__dirname , 'project.debug.json'));
 }else {
-    GLOBAL.pjconfig = require('./project.json');
+    GLOBAL.pjconfig = require(path.join(__dirname , 'project.json'));
 }
 
 if(argv.indexOf('--debug') >= 0){
@@ -25,6 +28,7 @@ if ("shard" in GLOBAL.pjconfig.mongodb) {
 } else {
     GLOBAL.MONGO_SHARD = false;
 }
+GLOBAL.MONGODB = GLOBAL.pjconfig.mongodb;
 var dispatcher = require(GLOBAL.pjconfig.acceptor.module)
   , save = require('./storage/MongodbStorage');
 var cacheCount = require('./service/cacheErrorCount');
@@ -35,7 +39,7 @@ dispatcher()
   .pipe(save());
 
 
-logger.log('badjs-storage start ...');
+logger.info('start badjs-storage success.');
 
 setTimeout(function (){
     require('./service/query')();

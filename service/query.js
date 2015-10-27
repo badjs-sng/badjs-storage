@@ -16,7 +16,7 @@ var cacheTotal = require('../service/cacheTotal');
 var cacheCount = require('../service/cacheErrorCount');
 
 
-var url = global.MONGDO_URL;
+var url = global.MONGODB.url;
 
 var mongoDB;
 // Use connect method to connect to the Server
@@ -122,16 +122,16 @@ var errorMsgTop = function (json, cb) {
 
     var oneDate = new Date(json.startDate);
 
-    if (isNaN(+oneDate)) {
-        cb({ok: false, msg: 'startDate or endDate parse error'});
-        return;
+    if( isNaN( +oneDate ) ){
+        cb( new Error("parse date error") ,  {ok : false , msg : 'startDate or endDate parse error'});
+        return ;
     }
 
     var nowDate = new Date(dateFormat(new Date, "yyyy-MM-dd")) - 0;
 
-    if (( +oneDate  ) > (+nowDate )) {
-        cb({ok: false, msg: 'can not found today'});
-        return;
+    if(( +oneDate  ) > (+nowDate )){
+        cb(   new Error("can not found today"),  {ok : false , msg : 'can not found today'});
+        return ;
     }
 
     var startDate = oneDate;
@@ -144,40 +144,37 @@ var errorMsgTop = function (json, cb) {
     var outResult = {startDate: +startDate, endDate: +endDate, item: []};
 
 
-    /*  mongoDB.collection('badjslog_' + id).find(queryJSON).count(function(error, doc){
-     if(error){
-     cb(error)
-     return ;
-     }*/
+  /*  mongoDB.collection('badjslog_' + id).find(queryJSON).count(function(error, doc){
+        if(error){
+            cb(error)
+            return ;
+        }*/
 
-    var cursor = mongoDB.collection('badjslog_' + id).aggregate(
-        [
-            {$match: queryJSON},
-            {$group: {_id: "$msg", total: {$sum: 1}}},
-            {$sort: {total: -1}},
-            {$limit: limit}
-        ],
-        {allowDiskUse: true}
-    );
-
-    cacheTotal.getTotal({id: id, key: totalKey}, function (err, total) {
-        logger.info('[query total] ' + '{id:' + id + ', key:' + totalKey + ', err:'+ err + ', total:' + total + '}');
-        if (err) {
-            logger.error('the cache total is err,the err is' + err);
-            cb(err);
-            return;
+    cacheTotal.getTotal({id : id , key : totalKey} , function (err , total){
+        if(err){
+            throw err;
         }
-        cursor.toArray(function (err, docs) {
-            if (err) {
+
+        var cursor =  mongoDB.collection('badjslog_' + id).aggregate(
+            [
+                {$match: queryJSON},
+                {$group: {_id: "$msg", total: {$sum: 1}}},
+                {$sort: {total: -1}},
+                {$limit: limit}
+            ],
+            {allowDiskUse: true}
+        );
+
+        cursor.toArray(function (err , docs){
+            if(err){
                 cb(err)
-                return;
+                return ;
             }
             outResult.item = docs;
             outResult.pv = total;
-            cb(err, outResult);
+            cb(err,outResult);
         });
     });
-
 //    });
 }
 
@@ -202,8 +199,6 @@ var getErrorMsgFromCache = function (query, isJson, cb) {
         }
 
         return;
-
-
     }
     errorMsgTop(query, function (err, doc) {
         if (err) {
@@ -453,7 +448,7 @@ module.exports = function () {
             totalKey = dateFormat(new Date(startDate), "yyyy-MM-dd");
 
             //trigger cacheTotal load in menory from disk
-            cacheTotal.getTotal({id: 0, key: totalKey});
+            //cacheTotal.getTotal({id : 0 , key : totalKey});
 
             req.query.ids.split("_").forEach(function (value, key) {
                 var fileName = dateFormat(new Date(startDate), "yyyy-MM-dd") + "__" + value;

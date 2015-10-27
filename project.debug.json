@@ -3,7 +3,9 @@
         "url" : "mongodb://localhost:27017/badjs",
         "shard" : false,
         "adminUser" : "betterjs",
-        "adminPassword" : "betterjs4imweb"
+        "adminPassword" : "betterjs4imweb",
+        "adminUrl" : "mongodb://localhost:27017/admin",
+        "isShard" : false
     },
     "acceptor": {
       "port" : 10000,

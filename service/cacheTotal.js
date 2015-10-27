@@ -1,11 +1,27 @@
 var fs = require("fs");
-var path = require("path");
+var path=require("path");
 
 var log4js = require('log4js'),
     logger = log4js.getLogger();
 
+var MongoClient = require('mongodb').MongoClient;
 
-var dateFormat = function (date, fmt) {
+var mongoDB;
+// Use connect method to connect to the Server
+MongoClient.connect(global.MONGODB.url, function(err, db) {
+    if(err){
+        logger.info("failed connect to server");
+    }else {
+        logger.info("Connected correctly to server");
+    }
+    mongoDB = db;
+});
+
+
+
+
+
+var dateFormat  = function (date , fmt){
     var o = {
         "M+": date.getMonth() + 1, //月份
         "d+": date.getDate(), //日
@@ -21,94 +37,50 @@ var dateFormat = function (date, fmt) {
     return fmt;
 }
 
-var key = dateFormat(new Date, "yyyy-MM-dd");
+var key = dateFormat(new Date , "yyyy-MM-dd");
 var saveData = {};
-GLOBAL.total = {};
-GLOBAL.total[key] = saveData;
 
-var existFile = path.join(".", "cache", "cacheTotal", key);
+setInterval(function (){
+    var newKey = key;
+    var newSaveData = JSON.parse(JSON.stringify(saveData));
 
-if (fs.existsSync(existFile)) {
-    logger.info("load exist file  = " + existFile);
-    try {
-        saveData = JSON.parse(fs.readFileSync(existFile));
-    } catch (e) {
-        saveData = {};
-    }
+    key = dateFormat(new Date , "yyyy-MM-dd");
+    saveData = {};
 
-}
+    Object.keys(newSaveData).forEach( function (key ){
+        var saveValue = newSaveData[key] -0;
+        var saveKey = {key : newKey +"-" + key};
+        mongoDB.collection("total").findOneAndUpdate(saveKey, {$inc:{total : saveValue }} , {upsert : true} , function (err , result){
+            logger.debug("cache total success - " + saveKey.key + " : " + saveValue );
+        })
+    });
 
-setInterval(function () {
-    var filePath = path.join(".", "cache", "cacheTotal", key);
-    fs.writeFileSync(filePath, JSON.stringify(saveData));
+},60000);
 
-    logger.debug("save into disk , key = " + key);
-
-    // clear old data
-    var newKey = dateFormat(new Date, "yyyy-MM-dd");
-    if (newKey != key) {
-        logger.debug("new day  and clear old data , newkey = " + key);
-        key = newKey;
-        GLOBAL.total = {};
-        GLOBAL.total[key] = saveData = {};
-    }
-}, 180000);
 
 module.exports = {
-    increase: function (data) {
-        var count = saveData[data.id];
-        if (count >= 1) {
-            count++;
-        } else {
-            count = 1;
-        }
-        saveData[data.id] = count;
-    },
-    getTotal: function (data, callback) {
-        callback = callback || (function(){});
-        var filecb = function(err, d){
-            logger.info('cacheTotal filecb: [err:' + err + '],data:' + JSON.stringify(d) + ',key:' + d[data.id]);
-            if (!err && d && d[data.id] > 0) {
-                callback(null, d[data.id]);
-            } else {
-                callback({err: 'the count is 0'}, 0);
+        increase : function (data){
+            var count = saveData[data.id];
+            if(count >=1){
+                count ++;
+            }else {
+                count = 1;
             }
-        };
-        if (!GLOBAL.total[data.key] || "{}" == JSON.stringify(GLOBAL.total[data.key])) {
-            var filePath = path.join(".", "cache", "cacheTotal", data.key);
-            logger.info('cacheTotal readfile'+filePath);
-            fs.readFile(filePath, function (err, json) {
-                if (err) {
-                    logger.error("load cacheTotal fail [" + err + "], path:" + filePath + ';' + JSON.stringify(data));
-                    filecb(err);
-                }else{
-                    json = GLOBAL.total[data.key] = JSON.parse(json);
-                    filecb(err, json);
+            saveData[data.id] = count;
+        },
+
+        getTotal : function (data , cb){
+            var findKey = {key : data.key +"-" + data.id};
+            mongoDB.collection("total").findOne(findKey , function (err , result){
+                if(err){
+                    cb(err);
+                }else {
+                    if(result){
+                        cb(null , result.total)
+                    }else {
+                        cb(null , 0)
+                    }
                 }
-
-            });
-        }else{
-            filecb(null, GLOBAL.total[data.key]);
+            })
         }
-
-    }
-    /*getTotal : function (data){
-     if(!GLOBAL.total[data.key] ||  "{}" == JSON.stringify(GLOBAL.total[data.key])){
-        var filePath = path.join("." , "cache" , "cacheTotal" , data.key);
-        try{
-            var json = JSON.parse(fs.readFileSync(filePath));
-            GLOBAL.total[data.key] = json;
-        }catch(e){
-            logger.error("load cacheTotal fail :" + JSON.stringify(data));
-            return 0;
-        }
-     }
-
-     var count = GLOBAL.total[data.key][data.id];
-     if( count >0 ){
-     return count;
-     }else {
-     return 0;
-     }
-     }*/
-};
+}
