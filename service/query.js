@@ -193,18 +193,25 @@ var getErrorMsgFromCache = function (query, isJson, cb) {
             cb(err, doc);
         }
     };
-    if (fs.existsSync(filePath)) {
-        logger.info("get ErrorMsg from cache id=" + query.id);
-        if (isJson) {
-            returnValue(null, JSON.parse(fs.readFileSync(filePath)));
-        } else {
-            returnValue(null, fs.readFileSync(filePath));
+    try{
+        var cacheData;
+        if (fs.existsSync(filePath)) {
+            logger.info("get ErrorMsg from cache id=" + query.id);
+            if (isJson) {
+                cacheData =JSON.parse(fs.readFileSync(filePath));
+            } else {
+                cacheData = fs.readFileSync(filePath);
+            }
+
+            if(cacheData){
+                returnValue(null, cacheData);
+                return;
+            }
         }
-
-        return;
-
-
+    }catch(e){
+        logger.error("get ErrorMsg from cache id=" + query.id + ';' + e.message);
     }
+
     errorMsgTop(query, function (err, doc) {
         if (err) {
             logger.info("cache errorMsgTop error fileName=" + fileName + " " + err)
