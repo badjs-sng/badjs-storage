@@ -67,7 +67,7 @@ module.exports = {
     getTotal: function (data, callback) {
         callback = callback || (function(){});
         var filecb = function(err, d){
-            logger.info('cacheTotal filecb: [err:' + err + '],data:' + JSON.stringify(d) + ',key:' + d[data.id]);
+            //logger.info('cacheTotal filecb: [err:' + err + '],data:' + JSON.stringify(d) + ',key:' + d[data.id]);
             if (!err && d && d[data.id] > 0) {
                 callback(null, d[data.id]);
             } else {
@@ -79,7 +79,7 @@ module.exports = {
             logger.info('cacheTotal readfile'+filePath);
             fs.readFile(filePath, function (err, json) {
                 if (err) {
-                    logger.error("load cacheTotal fail [" + err + "], path:" + filePath + ';' + JSON.stringify(data));
+                    logger.error("load cacheTotal fail [" + err + "], path:" + filePath + ';');
                     filecb(err);
                 }else{
                     json = GLOBAL.total[data.key] = JSON.parse(json);

@@ -435,7 +435,7 @@ module.exports = function () {
             req.query.startDate = req.query.startDate - 0;
 
             getErrorMsgFromCache(req.query, false, function (error, doc) {
-                logger.info('[errorMsgTop http response] error:'+ error + ', data:' + doc.toString());
+                logger.info('[errorMsgTop http response] error:'+ error /*+ ', data:' + doc.toString()*/);
                 res.writeHead(200, {
                     'Content-Type': 'text/json'
                 });
