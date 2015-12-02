@@ -336,7 +336,7 @@ module.exports = function () {
         .use('/queryCount', connect.query())
         .use('/queryCount', function (req, res) {
 
-            logger.info('query start time' + Date.now());
+            logger.info('query start time,queryCount'+ req.query + Date.now());
 
             //校验查询req的格式
             var result = validate(req, res);
@@ -377,7 +377,7 @@ module.exports = function () {
              delete items._id;
              })*/
             cursor.toArray(function (err, result) {
-                logger.info('query cost time' + Date.now());
+                logger.info('query cost time,queryCount' + Date.now());
                 if (global.debug == true) {
                     logger.debug("query error is=" + JSON.stringify(err));
                     logger.debug("query result is=" + JSON.stringify(result));

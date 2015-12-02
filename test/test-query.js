@@ -20,12 +20,12 @@ MongoClient.connect(mongoUrl, function (err, db) {
 
     var queryJSON = {};
     // lt endTime     gt startTime
-    queryJSON.date = {$lt: new Date(1439170351000), $gt: new Date(1439166840000)};
+    queryJSON.date = {$lt: new Date(1448841600000), $gt: new Date(1449014400000)};
 
     queryJSON.level = {$all: [4]};
 
     var startTime = Date.now();
-    mongoDB.collection('badjslog_' + 51).find(queryJSON, function (error, cursor) {
+    mongoDB.collection('badjslog_' + 24).find(queryJSON, function (error, cursor) {
         console.log(error);
         cursor.sort({'date': -1}).skip(0).limit(50000).forEach(function (item) {
             if (item) {

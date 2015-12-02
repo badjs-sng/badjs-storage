@@ -38,6 +38,7 @@ if (fs.existsSync(existFile)) {
 
 }
 
+//间隔写入上报错误pv
 setInterval(function () {
     var filePath = path.join(".", "cache", "cacheTotal", key);
     fs.writeFileSync(filePath, JSON.stringify(saveData));
@@ -52,7 +53,7 @@ setInterval(function () {
         GLOBAL.total = {};
         GLOBAL.total[key] = saveData = {};
     }
-}, 180000);
+}, 60000);//每分钟统计pv
 
 module.exports = {
     increase: function (data) {
