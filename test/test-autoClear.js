@@ -39,32 +39,43 @@ MongoClient.connect(url, function (err, db) {
     } else {
         console.info("Connected correctly to server");
     }
-    mongoDB = db;
+    //mongoDB = db;
+    autoClearStart(db, function(){
+        db.close();
+    });
 });
 
 
 // 10 天前的数据
 var beforeDate = 1000 * 60 * 60 * 24 * 10;
 
-var autoClearStart = function () {
+var autoClearStart = function (db, callback) {
     console.info('start auto clear data before ' + beforeDate + ' and after 7d will clear again');
-    mongoDB.collections(function (error, collections) {
+    db.collections(function (error, collections) {
+        var clen = 0;
+        var cb = function () {
+            clen--;
+            if (clen <= 0) {
+                (typeof callback == 'function') && callback();
+            }
+        };
         collections.forEach(function (collection, key) {
             if (collection.s.name.indexOf("badjs") < 0) {
                 return;
             }
             console.info("start clear " + collection.s.name);
+            clen++;
             collection.deleteMany({date: {$lt: new Date(new Date - beforeDate)}}, function (err, result) {
                 if (err) {
                     console.info("clear error " + err);
                 } else {
                     console.info("clear success id=" + collection.s.name);
                 }
+                cb();
             })
         })
     });
 };
-
 
 
 
