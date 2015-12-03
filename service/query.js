@@ -444,7 +444,11 @@ module.exports = function () {
                 res.writeHead(200, {
                     'Content-Type': 'text/json'
                 });
-                res.write(doc.toString());
+                try{
+                    res.write(doc.toString());
+                }catch(e){
+                    logger.error('/errorMsgTop' + JSON.stringify(req.query) + 'doc: ' + doc);
+                }
                 res.end();
             });
 
