@@ -335,8 +335,12 @@ module.exports = function () {
         })
         .use('/queryCount', connect.query())
         .use('/queryCount', function (req, res) {
+            try{
+                logger.info('query start time,queryCount'+ JSON.stringify(req.query) + Date.now());
+            }catch(e){
+                logger.error('[error] query start time,queryCount'+ ';;JSON.stringify Error');
+            }
 
-            logger.info('query start time,queryCount'+ req.query + Date.now());
 
             //校验查询req的格式
             var result = validate(req, res);
@@ -383,6 +387,7 @@ module.exports = function () {
                     logger.debug("query result is=" + JSON.stringify(result));
                 }
                 if (err) {
+                    logger.info('query cost time,[error] queryCount' + JSON.stringify(err));
                     res.write(JSON.stringify(err));
                     res.end();
                     return;
