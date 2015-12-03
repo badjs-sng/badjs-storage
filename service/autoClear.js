@@ -25,8 +25,8 @@ MongoClient.connect(url, function(err, db) {
 
 
 
-// 14 天前的数据
-var beforeDate = 1000 * 60 * 60 *24 *14 ;
+// 10 天前的数据
+var beforeDate = 1000 * 60 * 60 *24 *10 ;
 
 var autoClearStart = function (){
     logger.info('start auto clear data before '+ beforeDate +' and after 7d will clear again');
